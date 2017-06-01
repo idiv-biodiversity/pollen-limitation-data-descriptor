@@ -2,6 +2,7 @@
 # Whittaker diagram for biomes and study locations
 # I used the biome polygons from BIOMEplot package at https://github.com/kunstler/BIOMEplot/blob/master/R/biomes-plot.R
 # Note the the package inversed the axis: temperature on OY and precipitation on OX
+# Temperature and precipitation data extractions used for plotting were done with Extract_temp_rainfall.R script
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 library(data.table)
@@ -18,6 +19,7 @@ install_github("kunstler/BIOMEplot")
 # =============================================
 # read & prepare data
 # =============================================
+# Extractions were doen with Extract_temp_rainfall.R script
 extr.dt <- fread("Output/extractions_temp_pp.csv")
 # transform from mm to cm for precipitation
 extr.dt[, Annual_pp_cm := Annual_pp_mm/10] 
@@ -54,7 +56,8 @@ ggplot() +
                  colour = "white",  # polygon border
                  size   = 1) + # this is the thikness of the line separating the polygons
     # adjust the coloring of the polygons (biomes)
-    # colors were the ones used in BIOMEplot package
+    # colors and labels correspond to Fig 5.5, p92, Ch5 from  Ricklefs The Economy of Nature 6th txtbk
+    # at: https://www.academia.edu/15092278/Ricklefs_The_Economy_of_Nature_6th_txtbk
     scale_fill_manual(name   = "Biomes", # this will appear as the name of the legend as well
                       breaks = unique(df.biomes_polyg$id),
                       labels = c("Subtropical desert",
@@ -114,8 +117,6 @@ library(sp)
 library(mapview)
 library(rgdal)
 
-# extr.dt[Annual_pp_cm>100 & Annual_mean_temp_C %between% c(-10,-5),]
-
 # ----------------------
 # Detect thos points outside of graph
 # ----------------------
@@ -171,5 +172,5 @@ tundra.points.map <- mapview(tundra.sp, color ="red")
 # save as html
 mapshot(tundra.points.map, url = "tundra_points_map.html")
 
-# write shapefile to HDD
+# write shapefile to HDD to also check in QGIS/ArcMap
 rgdal::writeOGR(obj=tundra.sp, dsn="Output/tundra_pts", layer="tundra_pts", driver="ESRI Shapefile")

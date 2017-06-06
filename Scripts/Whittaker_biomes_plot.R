@@ -1,20 +1,14 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Whittaker diagram for biomes and study locations
-# I used the biome polygons from BIOMEplot package at https://github.com/kunstler/BIOMEplot/blob/master/R/biomes-plot.R
-# Note the the package inversed the axis: temperature on OY and precipitation on OX
+# I used the biome polygons Fig 5.5 p.92 in Ricklefs – The Economy of Nature, Chapter 5, Biological Communities, The biome concept.
+# (book at: https://www.academia.edu/15092278/Ricklefs_The_Economy_of_Nature_6th_txtbk)
+# The polygons were digitized in QGIS - see script Whittaker_biomes_prepare.R for details.
 # Temperature and precipitation data extractions used for plotting were done with Extract_temp_rainfall.R script
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-library(data.table)
-# library(rgeos)
-# library(maptools)
 library(ggplot2)
 library(broom)
-
-library(devtools)
-install_github("kunstler/BIOMEplot")
-# source("https://raw.githubusercontent.com/kunstler/BIOMEplot/master/R/biomes-plot.R")
-# plot_biome()
+library(data.table)
 
 # =============================================
 # read & prepare data
@@ -27,57 +21,36 @@ extr.dt[, Annual_pp_cm := Annual_pp_mm/10]
 extr.dt.unq <- unique(extr.dt, 
                       by = c("Annual_mean_temp_C", "Annual_pp_cm") )
 
-# get biome polygons with BIOMEplot package at https://github.com/kunstler/BIOMEplot/blob/master/R/biomes-plot.R
-# The author referred to the biome classification:
-# <<The Biomes are the Whittaker' biomes modified by Ricklefs (2008) in function
-# of mean annual temperature (MAT) and mean annual precipitation (MAP)>>
-# Ricklefs, R. E. (2008). The economy of nature. W. H. Freeman and Company. Chapter 5, Biological Communities, The biome concept.
-biomes_polyg <- BIOMEplot::fun.poly.obj()
-biomes_polyg <- biomes_polyg$poly.DF
-# plot(biomes_polyg)
-
-# biomes_polyg.rot <- maptools::elide(biomes_polyg, rotate=270, center=rgeos::gCentroid(biomes_polyg)@coords)
-# plot(biomes_polyg.rot)
-# BIOMEplot::plot_biome(add.legend=TRUE)
-
-# prepare polygons for ggplot
-df.biomes_polyg <- broom::tidy(biomes_polyg)
+# get Whittaker biome polygons directly as data frame ready to use in ggplot
+biomes.dt <- fread("Data/Whittaker_biomes.csv")
 
 # =============================================
 # plot with ggplot
 # =============================================
 ggplot() + 
     # add polygons
-    geom_polygon(data = df.biomes_polyg,
-                 aes(x      = lat,  # lat is temperature in BIOMEplot package's biome polygons
-                     y      = long, # and long is precipitations (check the structure of df.biomes_polyg for clarifications)
-                     fill   = id,   # fill with colour and group biome polygons by column id in given data frame
-                     group  = id),
-                 colour = "white",  # polygon border
-                 size   = 1) + # this is the thikness of the line separating the polygons
+    geom_polygon(data = biomes.dt,
+                 aes(x      = temp_C,
+                     y      = precp_cm,
+                     fill   = Biome,
+                     group  = Biome),
+                 colour = "gray98", # for polygon border
+                 size   = 1) +     # this is the thikness of the line separating the polygons
     # adjust the coloring of the polygons (biomes)
     # colors and labels correspond to Fig 5.5, p92, Ch5 from  Ricklefs The Economy of Nature 6th txtbk
     # at: https://www.academia.edu/15092278/Ricklefs_The_Economy_of_Nature_6th_txtbk
     scale_fill_manual(name   = "Biomes", # this will appear as the name of the legend as well
-                      breaks = unique(df.biomes_polyg$id),
-                      labels = c("Subtropical desert",
-                                 "Temperate grassland/desert",
-                                 "Woodland/shrubland",
-                                 "Temperate seasonal forest",
-                                 "Boreal forest",
-                                 "Temperate rain forest",
-                                 "Tropical rain forest",
-                                 "Tropical seasonal forest/savanna",
-                                 "Tundra"),
-                      values = c("Subtropical desert"         = "#dcbb50",
-                                 "Temperate grassland desert" = "#fdd67a",
-                                 "Woodland shrubland"         = "#d26e3f",
-                                 "Temperate forest"           = "#97b669",
-                                 "Boreal forest"              = "#a5c890",
-                                 "Temperate rain forest"      = "#75a95e",
-                                 "Tropical rain forest"       = "#317a21",
-                                 "Tropical forest savanna"    = "#a09700",
-                                 "Tundra"                     = "#c2e1dd")) +
+                      breaks = sort(unique(biomes.dt$Biome)),
+                      labels = sort(unique(biomes.dt$Biome)),
+                      values = c("Boreal forest"                   = "#a5c890",
+                                 "Subtropical desert"              = "#dcbb50",
+                                 "Temperate grassland/desert"      = "#fdd67a",
+                                 "Temperate rain forest"           = "#75a95e",
+                                 "Temperate seasonal forest"       = "#97b669",
+                                 "Tropical rain forest"            = "#317a21",
+                                 "Tropical seasonal forest/savana" = "#a09700",
+                                 "Tundra"                          = "#c2e1dd",
+                                 "Woodland/shrubland"              = "#d26e3f")) +
     # add unique combinations of precipitation & temperature
     geom_point(data = extr.dt.unq, 
                aes(x      = Annual_mean_temp_C, 
@@ -89,21 +62,26 @@ ggplot() +
     # overwrite axis titles
     labs(x = "Mean annual temperature (°C)",
          y = "Mean annual precipitation (cm)") +  
+    # set range on OY axes and adjust the distance (gap) from OX axes
+    scale_y_continuous(limits = c(-5, round(max(extr.dt.unq$Annual_pp_cm, na.rm = TRUE))+10), 
+                       expand = c(0, 0)) +
     # set the general ggplot theme
-    theme_classic() +
+    theme_bw() +
     # adjust legend position
-    theme(legend.justification = c(0, 1),   # set the upper left corner of the legend box
-          legend.position = c(0.05, 0.9))   # adjust the position of the corner as relative to axis
+    theme(legend.justification = c(0, 1),     # set the upper left corner of the legend box
+          legend.position = c(0.05, 0.9),     # adjust the position of the corner as relative to axis
+          # panel.grid.major = element_blank(), # eliminate major grids
+          panel.grid.minor = element_blank()) # eliminate minor grids
 
 # =============================================
 # Save to pdf and png file
 # =============================================
-ggsave(filename = file.path("Output", "Whittaker_diagram_biomes_draf3.pdf"), 
+ggsave(filename = file.path("Output", "Whittaker_diagram_biomes_draf4.pdf"), 
        width    = 29.7, 
        height   = 21, 
        units    = "cm")
 
-ggsave(filename = file.path("Output", "Whittaker_diagram_biomes_draf3.png"),
+ggsave(filename = file.path("Output", "Whittaker_diagram_biomes_draf4.png"),
        width    = 29.7, 
        height   = 21, 
        units    = "cm",

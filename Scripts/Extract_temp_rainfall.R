@@ -10,13 +10,13 @@ library(raster)
 library(RANN)
 
 # Source buffer-extraction function from GitHub
-source("https://raw.githubusercontent.com/valentinitnelav/RandomScripts/master/extract2near.R")
+source("https://raw.githubusercontent.com/valentinitnelav/helpers/master/R/extract_FromNearCellRst.R")
 
 # set the temporary folder for raster package operations
 rasterOptions(tmpdir = "Data/tmp_rst")
 
 # read latest dataset from Joanne
-myDT <- fread("Data/PL_ANALYSIS_24_04_2017.csv", colClasses = "character")
+myDT <- fread("Data/PL_ANALYSIS_8_06_2017.csv", colClasses = "character")
 
 # get only columns of interest
 studyXY <- myDT[,.(unique_number, lon_decimal_PTL_JMB, lat_decimal_PTL_JMB)]
@@ -40,12 +40,12 @@ rst.temp <- raster("I:/sie/_data_VS/CHELSA/CHELSA_bio1_1979-2013_V1_1.tif")
 names(rst.temp) <- "Annual_mean_temp_C"
 
 # set the buffer in meters
-buf.m <- 10000
+buf.m <- 50000
 
 # Extract from list of rasters
 system.time(
     extr.lst <- lapply(X   = list(rst.pp, rst.temp),
-                       FUN = extract2near,
+                       FUN = extract_FromNearCellRst,
                        XY  = studyXY.unq, 
                        my.buffer  = buf.m,
                        simplified = FALSE,

@@ -22,6 +22,9 @@ source("https://raw.githubusercontent.com/valentinitnelav/helpers/master/R/from_
 biomes.poly <- rgdal::readOGR(dsn   = "Whittaker biomes graph - digitize", 
                               layer = "biomes")
 
+# -----------------
+# transform to data frame and save as csv
+# -----------------
 df.biomes_polyg <- from_PolyDF2DF(biomes.poly)
 
 # rename columns
@@ -38,7 +41,7 @@ write.csv(x = df.biomes_polyg, file = "Data/Whittaker_biomes.csv", row.names = F
 # -----------------
 # save to shapefile
 # -----------------
-# Adjust the temperature (longitude) values
+# Adjust the temperature values (because of how was digitized, temp corresponds to longitude and needs to be divided by 10)
 for (i in 1:length(biomes.poly@polygons)){
     biomes.poly@polygons[[i]]@Polygons[[1]]@coords[,1] <- biomes.poly@polygons[[i]]@Polygons[[1]]@coords[,1]/10
 }

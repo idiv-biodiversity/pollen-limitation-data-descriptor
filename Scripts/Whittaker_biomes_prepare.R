@@ -16,13 +16,13 @@ library(rgdal)
 library(broom)
 
 # Load from GitHub function to convert from SpatialPolygonsDataFrame to data frame while keeping attributes
-source("https://raw.githubusercontent.com/valentinitnelav/helpers/master/R/from_PolyDF.to.DF.R")
+source("https://raw.githubusercontent.com/valentinitnelav/helpers/master/R/from_PolyDF2DF.R")
 
 # read shapefile
 biomes.poly <- rgdal::readOGR(dsn   = "Whittaker biomes graph - digitize", 
                               layer = "biomes")
 
-df.biomes_polyg <- from_PolyDF.to.DF(biomes.poly)
+df.biomes_polyg <- from_PolyDF2DF(biomes.poly)
 
 # rename columns
 names(df.biomes_polyg)[1] <- "temp_C"
@@ -34,3 +34,17 @@ df.biomes_polyg$temp_C <- df.biomes_polyg$temp_C/10
 
 # save to csv file
 write.csv(x = df.biomes_polyg, file = "Data/Whittaker_biomes.csv", row.names = FALSE)
+
+# -----------------
+# save to shapefile
+# -----------------
+# Adjust the temperature (longitude) values
+for (i in 1:length(biomes.poly@polygons)){
+    biomes.poly@polygons[[i]]@Polygons[[1]]@coords[,1] <- biomes.poly@polygons[[i]]@Polygons[[1]]@coords[,1]/10
+}
+plot(biomes.poly)
+
+writeOGR(obj    = biomes.poly,
+         dsn    = "Whittaker biomes graph - digitize", 
+         layer  = "Whittaker_biomes", 
+         driver = "ESRI Shapefile")

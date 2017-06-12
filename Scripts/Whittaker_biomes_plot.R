@@ -76,12 +76,12 @@ ggplot() +
 # =============================================
 # Save to pdf and png file
 # =============================================
-ggsave(filename = file.path("Output", "Whittaker_diagram_biomes_draf4.pdf"), 
+ggsave(filename = file.path("Output", "Whittaker_diagram_biomes_draf5.pdf"), 
        width    = 29.7, 
        height   = 21, 
        units    = "cm")
 
-ggsave(filename = file.path("Output", "Whittaker_diagram_biomes_draf4.png"),
+ggsave(filename = file.path("Output", "Whittaker_diagram_biomes_draf5.png"),
        width    = 29.7, 
        height   = 21, 
        units    = "cm",

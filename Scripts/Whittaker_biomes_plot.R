@@ -138,7 +138,7 @@ mapshot(outside.map, url = "outside_map.html")
 # why aren't points in tundra biome ?
 # ----------------------
 # read latest dataset from Joanne
-myDT <- fread("Data/PL_ANALYSIS_24_04_2017.csv", colClasses = "character")
+myDT <- fread("Data/PL_ANALYSIS_8_06_2017.csv", colClasses = "character")
 myDT.sbs <- myDT[Community_Type_Author %like% "tundra",
                  .(unique_number,
                    Community_Type_Author)]
@@ -153,6 +153,7 @@ tundra.sp <- SpatialPointsDataFrame(coords      = tundra.dt[, c("lon_decimal_PTL
                                     data        = tundra.dt,
                                     proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
 tundra.points.map <- mapview(tundra.sp, color ="red")
+tundra.points.map
 # save as html
 mapshot(tundra.points.map, url = "tundra_points_map.html")
 

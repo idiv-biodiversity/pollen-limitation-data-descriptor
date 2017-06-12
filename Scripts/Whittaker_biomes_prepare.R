@@ -45,7 +45,7 @@ write.csv(x = df.biomes_polyg, file = "Data/Whittaker_biomes.csv", row.names = F
 for (i in 1:length(biomes.poly@polygons)){
     biomes.poly@polygons[[i]]@Polygons[[1]]@coords[,1] <- biomes.poly@polygons[[i]]@Polygons[[1]]@coords[,1]/10
 }
-plot(biomes.poly)
+proj4string(biomes.poly) <- ""
 
 writeOGR(obj    = biomes.poly,
          dsn    = "Whittaker biomes graph - digitize", 

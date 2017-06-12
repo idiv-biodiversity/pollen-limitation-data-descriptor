@@ -13,7 +13,7 @@ library(data.table)
 # =============================================
 # read & prepare data
 # =============================================
-# Extractions were doen with Extract_temp_rainfall.R script
+# Extractions were done with Extract_temp_rainfall.R script
 extr.dt <- fread("Output/extractions_temp_pp.csv")
 # transform from mm to cm for precipitation
 extr.dt[, Annual_pp_cm := Annual_pp_mm/10] 
@@ -99,10 +99,16 @@ library(rgdal)
 # Detect thos points outside of graph
 # ----------------------
 PointsSP <- SpatialPoints(coords = extr.dt[!is.na(Annual_pp_cm), 
-                                           c("Annual_pp_cm", 
-                                             "Annual_mean_temp_C")])
+                                           c("Annual_mean_temp_C", 
+                                             "Annual_pp_cm")])
+
+biomes_polyg <- rgdal::readOGR(dsn    = "Whittaker biomes graph - digitize", 
+                               layer  = "Whittaker_biomes")
+
+plot(biomes_polyg); points(PointsSP)
+
 my.over <- sp::over(PointsSP, biomes_polyg)
-outside <- extr.dt[!is.na(Annual_pp_cm),][is.na(my.over$biomes),]
+outside <- extr.dt[!is.na(Annual_pp_cm),][is.na(my.over$Biome),]
 outside.unq <- unique(outside, by = c("Annual_pp_cm","Annual_mean_temp_C"))
 # setorder(outside.unq, Annual_mean_temp_C, Annual_pp_cm)
 write.csv(outside.unq, "Output/outside_unque.csv")

@@ -9,7 +9,5 @@ The script `Whittaker_biomes_prepare.R` was used to prepare the digitized polygo
 `Extract_temp_rainfall.R` was used to extract pairs of temperature and precipitation at study locations.
 These extractions together with the digitized biome polygons were used as layer for plotting in `Whittaker_biomes_plot.R`
 
-`Extract_Whittaker_biomes.R` was further used for extracting Whittaker biomes names at each study location.
-
 ### Global map with study locations
 Check the script `Global_map_pollen_lim.R`

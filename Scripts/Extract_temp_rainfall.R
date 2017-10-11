@@ -1,7 +1,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Script to extract Annual precipitation amount [mm] and Annual mean temperature [°C]  for each study location
 # in the pollen limitation dataset.
-# Extractions are used further for making the Whittaker diagram for biomes.
+# Extractions are used further for making the biomes Whittaker diagram. 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 library(data.table)
@@ -16,7 +16,7 @@ source("https://raw.githubusercontent.com/valentinitnelav/helpers/master/R/extra
 rasterOptions(tmpdir = "Data/tmp_rst")
 
 # read latest dataset from Joanne
-myDT <- fread("Data/PL_ANALYSIS_8_06_2017.csv", colClasses = "character")
+myDT <- fread("Data/PL_ANALYSIS_02_10_2017.csv", colClasses = "character")
 
 # get only columns of interest
 studyXY <- myDT[,.(unique_number, lon_decimal_PTL_JMB, lat_decimal_PTL_JMB)]
@@ -33,10 +33,10 @@ studyXY.unq <- unique(studyXY[,.(lon_decimal_PTL_JMB, lat_decimal_PTL_JMB)],
 
 # Read in rasters from iDiv share
 # Annual precipitation amount [mm] 
-rst.pp <- raster("I:/sie/_data_VS/CHELSA/CHELSA_bio12_1979-2013_V1_1.tif")
+rst.pp <- raster("I:/sie/_data_VS/CHELSA/chelsa_bioclim_v1.2/CHELSA_bio_12.tif")
 names(rst.pp) <- "Annual_pp_mm"
 # Annual mean temperature [°C] 
-rst.temp <- raster("I:/sie/_data_VS/CHELSA/CHELSA_bio1_1979-2013_V1_1.tif")
+rst.temp <- raster("I:/sie/_data_VS/CHELSA/chelsa_bioclim_v1.2/CHELSA_bio_1.tif")
 names(rst.temp) <- "Annual_mean_temp_C"
 
 # set the buffer in meters
@@ -51,6 +51,7 @@ system.time(
                        simplified = FALSE,
                        lib.check  = TRUE)
 )
+# takes approx 1 min
 
 # create a column for each extraction table that indicates which raster was used
 lapply(extr.lst, function(dt) dt[, varb := names(dt)[4]])

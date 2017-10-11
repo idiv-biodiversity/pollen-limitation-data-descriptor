@@ -1,22 +1,28 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Whittaker diagram for biomes and study locations
-# I used the biome polygons Fig 5.5 p.92 in Ricklefs – The Economy of Nature, Chapter 5, Biological Communities, The biome concept.
-# (book at: https://www.academia.edu/15092278/Ricklefs_The_Economy_of_Nature_6th_txtbk)
-# The polygons were digitized in QGIS - see script Whittaker_biomes_prepare.R for details.
-# Temperature and precipitation data extractions used for plotting were done with Extract_temp_rainfall.R script
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+####################################################################################
+## Whittaker diagram for biomes and study locations
+## I used the biome polygons Fig 5.5 p.92 in Ricklefs, 
+## "The Economy of Nature, Chapter 5, Biological Communities, The biome concept."
+## at: https://www.academia.edu/15092278/Ricklefs_The_Economy_of_Nature_6th_txtbk
+## The polygons were digitized in QGIS - see script Whittaker_biomes_prepare.R for details.
+## Temperature and precipitation data extractions used for plotting were done with Extract_temp_rainfall.R script
+####################################################################################
 
 library(ggplot2)
 library(broom)
 library(data.table)
 
-# =============================================
+# =================================================================================
 # read & prepare data
-# =============================================
+# =================================================================================
 # Extractions were done with Extract_temp_rainfall.R script
 extr.dt <- fread("Output/extractions_temp_pp.csv")
 # transform from mm to cm for precipitation
-extr.dt[, Annual_pp_cm := Annual_pp_mm/10] 
+extr.dt[, Annual_pp_cm := Annual_pp_mm/10]
+# delete column precipitation in mm
+extr.dt[, Annual_pp_mm := NULL]
+# divide temperature by 10 (original values from CHELSA v1.2 need to be divided by 10 for temp)
+extr.dt[, Annual_mean_temp_C := Annual_mean_temp_C/10] 
+
 # get unique pairs of coordinates of precipitation & temperature (not longitude-latitude!)
 extr.dt.unq <- unique(extr.dt, 
                       by = c("Annual_mean_temp_C", "Annual_pp_cm") )
@@ -24,10 +30,23 @@ extr.dt.unq <- unique(extr.dt,
 # get Whittaker biome polygons directly as data frame ready to use in ggplot
 biomes.dt <- fread("Data/Whittaker_biomes.csv")
 
-# =============================================
+# =================================================================================
 # plot with ggplot
-# =============================================
-ggplot() + 
+# =================================================================================
+
+# Set values from Biome column of biomes.dt in desired order using a vector
+# This is convenient, because trickles down to the lenged of the graph
+my_biomes <- c("Tundra",
+               "Boreal forest",
+               "Temperate seasonal forest",
+               "Temperate rain forest",
+               "Tropical rain forest",
+               "Tropical seasonal forest/savana",
+               "Subtropical desert",
+               "Temperate grassland/desert",
+               "Woodland/shrubland")
+
+biomes_plot <- ggplot() + 
     # add polygons
     geom_polygon(data = biomes.dt,
                  aes(x      = temp_C,
@@ -35,29 +54,30 @@ ggplot() +
                      fill   = Biome,
                      group  = Biome),
                  colour = "gray98", # for polygon border
-                 size   = 1) +     # this is the thikness of the line separating the polygons
+                 size   = 0.5) +    # this is the thikness of the line separating the polygons
     # adjust the coloring of the polygons (biomes)
     # colors and labels correspond to Fig 5.5, p92, Ch5 from  Ricklefs The Economy of Nature 6th txtbk
     # at: https://www.academia.edu/15092278/Ricklefs_The_Economy_of_Nature_6th_txtbk
     scale_fill_manual(name   = "Biomes", # this will appear as the name of the legend as well
-                      breaks = sort(unique(biomes.dt$Biome)),
-                      labels = sort(unique(biomes.dt$Biome)),
-                      values = c("Boreal forest"                   = "#a5c890",
-                                 "Subtropical desert"              = "#dcbb50",
-                                 "Temperate grassland/desert"      = "#fdd67a",
-                                 "Temperate rain forest"           = "#75a95e",
+                      breaks = my_biomes,
+                      labels = my_biomes,
+                      values = c("Tundra"                          = "#c2e1dd",
+                                 "Boreal forest"                   = "#a5c890",
                                  "Temperate seasonal forest"       = "#97b669",
+                                 "Temperate rain forest"           = "#75a95e",
                                  "Tropical rain forest"            = "#317a21",
                                  "Tropical seasonal forest/savana" = "#a09700",
-                                 "Tundra"                          = "#c2e1dd",
+                                 "Subtropical desert"              = "#dcbb50",
+                                 "Temperate grassland/desert"      = "#fdd67a",
                                  "Woodland/shrubland"              = "#d26e3f")) +
     # add unique combinations of precipitation & temperature
     geom_point(data = extr.dt.unq, 
                aes(x      = Annual_mean_temp_C, 
                    y      = Annual_pp_cm), 
-               size   = 2,
-               shape  = 21,   # the shape of the point is a circle
-               colour = "Blue 4", bg = "Deep Sky Blue 4", # give color for the cricle edge and also for bakground (bg)
+               size   = 1.3,
+               shape  = 21,   # the shape of the point is a filled circle
+               # give color for the cricle edge and also for bakground (bg)
+               colour = "Blue 4", bg = "Deep Sky Blue 4", 
                alpha  = 1) + # set opacity level 
     # overwrite axis titles
     labs(x = "Mean annual temperature (°C)",
@@ -69,35 +89,41 @@ ggplot() +
     theme_bw() +
     # adjust legend position
     theme(legend.justification = c(0, 1),     # set the upper left corner of the legend box
-          legend.position = c(0.05, 0.9),     # adjust the position of the corner as relative to axis
+          legend.position = c(0.01, 0.99),     # adjust the position of the corner as relative to axis
           # panel.grid.major = element_blank(), # eliminate major grids
           panel.grid.minor = element_blank()) # eliminate minor grids
 
-# =============================================
-# Save to pdf and png file
-# =============================================
-ggsave(filename = file.path("Output", "Whittaker_diagram_biomes_draf5.pdf"), 
-       width    = 29.7, 
-       height   = 21, 
-       units    = "cm")
+biomes_plot
 
-ggsave(filename = file.path("Output", "Whittaker_diagram_biomes_draf5.png"),
-       width    = 29.7, 
-       height   = 21, 
+# =================================================================================
+# Save to pdf and png file
+# =================================================================================
+ggsave(biomes_plot,
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_11Oct17.pdf"), 
+       width    = 8.5, 
+       height   = 7.5, 
        units    = "cm",
+       scale    = 2)
+
+ggsave(biomes_plot,
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_11Oct17.png"),
+       width    = 8.5, 
+       height   = 7.5, 
+       units    = "cm",
+       scale    = 2,
        dpi      = 600)
 
-# =============================================
+# =================================================================================
 # Diagnostics & check for outliers
-# =============================================
+# =================================================================================
 library(sp)
 # library(rnaturalearth)
 library(mapview)
 library(rgdal)
 
-# ----------------------
-# Detect thos points outside of graph
-# ----------------------
+# ---------------------------------------------------------------------------------
+# Detect those points outside of graph
+# ---------------------------------------------------------------------------------
 PointsSP <- SpatialPoints(coords = extr.dt[!is.na(Annual_pp_cm), 
                                            c("Annual_mean_temp_C", 
                                              "Annual_pp_cm")])
@@ -134,9 +160,9 @@ outside.map
 # save as html
 mapshot(outside.map, url = "outside_map.html")
 
-# ----------------------
+# ---------------------------------------------------------------------------------
 # why aren't points in tundra biome ?
-# ----------------------
+# ---------------------------------------------------------------------------------
 # read latest dataset from Joanne
 myDT <- fread("Data/PL_ANALYSIS_8_06_2017.csv", colClasses = "character")
 myDT.sbs <- myDT[Community_Type_Author %like% "tundra",

@@ -6,7 +6,7 @@
 # the graph in Fig 5.5 p. 92 from Ricklefs – The Economy of Nature 
 # (at: https://www.academia.edu/15092278/Ricklefs_The_Economy_of_Nature_6th_txtbk)
 # Georeferencing was done using the EPSG:53002 (sphere equidistant cylindrical) CRS.
-# I used 4 ground control points located in 4 corners of the graph, with X within -100 and 300 
+# I used 4 ground control points located in 4 corners of the graph, with X within -100m and 300m 
 # instead of -10 and 30 in order to avoid distortions.
 # Digitization was carried at scale 1:500. The file was saved as biomes.shp
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -23,10 +23,6 @@ extr.dt[, Annual_pp_mm := NULL]
 # divide temperature by 10 (original values from CHELSA v1.2 need to be divided by 10 for temp)
 extr.dt[, Annual_mean_temp_C := Annual_mean_temp_C/10] 
 
-# get unique pairs of coordinates of precipitation & temperature (not longitude-latitude!)
-extr.dt.unq <- unique(extr.dt, 
-                      by = c("Annual_mean_temp_C", "Annual_pp_cm") )
-
 # get Whittaker biome polygons directly as data frame ready to use in ggplot
 biomes.dt <- fread("Data/Whittaker_biomes.csv")
 
@@ -46,6 +42,7 @@ my_biomes <- c("Tundra",
                "Temperate grassland/desert",
                "Woodland/shrubland")
 
+set.seed(1) # for jittering each time in the same way
 biomes_plot <- ggplot() + 
     # add polygons
     geom_polygon(data = biomes.dt,
@@ -71,12 +68,13 @@ biomes_plot <- ggplot() +
                                  "Temperate grassland/desert"      = "#fdd67a",
                                  "Woodland/shrubland"              = "#d26e3f")) +
     # add unique combinations of precipitation & temperature
-    geom_point(data = extr.dt.unq, 
+    geom_point(data = extr.dt, 
                aes(x      = Annual_mean_temp_C, 
                    y      = Annual_pp_cm,
                    # text will be ignored in ggplot but will be used for hovering purposes in plotly
                    # this makes point identification interactive and smooth
-                   text   = paste0('unique_number: ', unique_number)), 
+                   text   = paste0('unique_number: ', unique_number)),
+               position = position_jitter(width = 0.15, height = 0),
                size   = 1.3,
                shape  = 21,   # the shape of the point is a filled circle
                # give color for the cricle edge and also for bakground (bg)
@@ -86,7 +84,7 @@ biomes_plot <- ggplot() +
     labs(x = "Mean annual temperature (°C)",
          y = "Mean annual precipitation (cm)") +  
     # set range on OY axes and adjust the distance (gap) from OX axes
-    scale_y_continuous(limits = c(-5, round(max(extr.dt.unq$Annual_pp_cm, na.rm = TRUE))+10), 
+    scale_y_continuous(limits = c(-5, round(max(extr.dt$Annual_pp_cm, na.rm = TRUE))+10), 
                        expand = c(0, 0)) +
     # set the general ggplot theme
     theme_bw() +
@@ -96,20 +94,23 @@ biomes_plot <- ggplot() +
           # panel.grid.major = element_blank(), # eliminate major grids
           panel.grid.minor = element_blank()) # eliminate minor grids
 
+set.seed(1) # for jittering each time in the same way
 biomes_plot
 
 # =================================================================================
 # Save to pdf and png file
 # =================================================================================
+set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_11Oct17.pdf"), 
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_12Oct17.pdf"), 
        width    = 8.5, 
        height   = 7.5, 
        units    = "cm",
        scale    = 2)
 
+set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_11Oct17.png"),
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_12Oct17.png"),
        width    = 8.5, 
        height   = 7.5, 
        units    = "cm",
@@ -130,7 +131,10 @@ require(plotly)
 # ---------------------------------------------------------------------------------
 # A) make interactive plot with plotly from ggplot graph
 # use the hover property to identify points
-# Warning - this will not catch overlapping points!
+# Warning - will not catch overlapping points if they are not jittered
+# and when they are jittered it reports jittered coordinates from the graph 
+# and not the original ones from the data table.
+set.seed(1) # for jittering each time in the same way
 ggplotly(biomes_plot)
 
 # B) Use a spatial overlay tool

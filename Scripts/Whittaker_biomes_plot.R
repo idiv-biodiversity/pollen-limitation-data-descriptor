@@ -73,7 +73,10 @@ biomes_plot <- ggplot() +
     # add unique combinations of precipitation & temperature
     geom_point(data = extr.dt.unq, 
                aes(x      = Annual_mean_temp_C, 
-                   y      = Annual_pp_cm), 
+                   y      = Annual_pp_cm,
+                   # text will be ignored in ggplot but will be used for hovering purposes in plotly
+                   # this makes point identification interactive and smooth
+                   text   = paste0('unique_number: ', unique_number)), 
                size   = 1.3,
                shape  = 21,   # the shape of the point is a filled circle
                # give color for the cricle edge and also for bakground (bg)
@@ -120,10 +123,17 @@ library(sp)
 # library(rnaturalearth)
 library(mapview)
 library(rgdal)
+require(plotly)
 
 # ---------------------------------------------------------------------------------
 # Detect those points outside of graph
 # ---------------------------------------------------------------------------------
+# A) make interactive plot with plotly from ggplot graph
+# use the hover property to identify points
+# Warning - this will not catch overlapping points!
+ggplotly(biomes_plot)
+
+# B) Use a spatial overlay tool
 PointsSP <- SpatialPoints(coords = extr.dt[!is.na(Annual_pp_cm), 
                                            c("Annual_mean_temp_C", 
                                              "Annual_pp_cm")])
@@ -137,8 +147,8 @@ my.over <- sp::over(PointsSP, biomes_polyg)
 outside <- extr.dt[!is.na(Annual_pp_cm),][is.na(my.over$Biome),]
 outside.unq <- unique(outside, by = c("Annual_pp_cm","Annual_mean_temp_C"))
 # setorder(outside.unq, Annual_mean_temp_C, Annual_pp_cm)
-write.csv(outside.unq, "Output/outside_unque.csv")
-write.csv(outside, "Output/outside_with_duplicates.csv")
+write.csv(outside.unq, "Output/Outliers/outside_unque.csv")
+write.csv(outside, "Output/Outliers/outside_with_duplicates.csv")
 
 # check on global map those locations
 outside.WGS84 <- SpatialPointsDataFrame(coords      = outside[, c("lon_decimal_PTL_JMB", 
@@ -148,14 +158,14 @@ outside.WGS84 <- SpatialPointsDataFrame(coords      = outside[, c("lon_decimal_P
 
 # download countries from Natural Earth
 # spdf_world <- ne_download(scale = 110, type = 'countries')
-
-mapviewOptions(basemaps = c("Esri.WorldShadedRelief", 
-                            "Esri.WorldImagery",
-                            "CartoDB.Positron",
-                            "OpenTopoMap"))
 # outside.map <- mapview(spdf_world, 
 #                        alpha.regions = 0.1)
-outside.map <-  mapview(outside.WGS84, color ="red")
+
+mapviewOptions(basemaps = c("Esri.WorldImagery",
+                            "OpenTopoMap",
+                            "Esri.WorldShadedRelief",
+                            "CartoDB.Positron"))
+outside.map <-  mapview(outside.WGS84, color ="red", cex = 15)
 outside.map
 # save as html
 mapshot(outside.map, url = "outside_map.html")
@@ -164,7 +174,7 @@ mapshot(outside.map, url = "outside_map.html")
 # why aren't points in tundra biome ?
 # ---------------------------------------------------------------------------------
 # read latest dataset from Joanne
-myDT <- fread("Data/PL_ANALYSIS_8_06_2017.csv", colClasses = "character")
+myDT <- fread("Data/PL_ANALYSIS_02_10_2017.csv", colClasses = "character")
 myDT.sbs <- myDT[Community_Type_Author %like% "tundra",
                  .(unique_number,
                    Community_Type_Author)]
@@ -172,13 +182,13 @@ tundra.dt <- merge(myDT.sbs, extr.dt,
                    by = "unique_number")
 str(tundra.dt)
 
-write.csv(tundra.dt, file = "Output/tundra_points.csv", row.names = FALSE)
+write.csv(tundra.dt, file = "Output/tundra_pts/tundra_points.csv", row.names = FALSE)
 
 tundra.sp <- SpatialPointsDataFrame(coords      = tundra.dt[, c("lon_decimal_PTL_JMB", 
                                                               "lat_decimal_PTL_JMB")],
                                     data        = tundra.dt,
                                     proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-tundra.points.map <- mapview(tundra.sp, color ="red")
+tundra.points.map <- mapview(tundra.sp, color ="red", cex = 15)
 tundra.points.map
 # save as html
 mapshot(tundra.points.map, url = "tundra_points_map.html")

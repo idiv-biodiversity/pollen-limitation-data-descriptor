@@ -15,22 +15,22 @@ library(data.table)
 # read & prepare data
 # =================================================================================
 # Extractions were done with Extract_temp_rainfall.R script
-extr.dt <- fread("Output/extractions_temp_pp.csv")
+extr_dt <- fread("Output/extractions_temp_pp.csv")
 # transform from mm to cm for precipitation
-extr.dt[, Annual_pp_cm := Annual_pp_mm/10]
+extr_dt[, Annual_pp_cm := Annual_pp_mm/10]
 # delete column precipitation in mm
-extr.dt[, Annual_pp_mm := NULL]
+extr_dt[, Annual_pp_mm := NULL]
 # divide temperature by 10 (original values from CHELSA v1.2 need to be divided by 10 for temp)
-extr.dt[, Annual_mean_temp_C := Annual_mean_temp_C/10] 
+extr_dt[, Annual_mean_temp_C := Annual_mean_temp_C/10] 
 
 # get Whittaker biome polygons directly as data frame ready to use in ggplot
-biomes.dt <- fread("Data/Whittaker_biomes.csv")
+biomes_dt <- fread("Data/Whittaker_biomes.csv")
 
 # =================================================================================
 # plot with ggplot
 # =================================================================================
 
-# Set values from Biome column of biomes.dt in desired order using a vector
+# Set values from Biome column of biomes_dt in desired order using a vector
 # This is convenient, because trickles down to the lenged of the graph
 my_biomes <- c("Tundra",
                "Boreal forest",
@@ -45,7 +45,7 @@ my_biomes <- c("Tundra",
 set.seed(1) # for jittering each time in the same way
 biomes_plot <- ggplot() + 
     # add polygons
-    geom_polygon(data = biomes.dt,
+    geom_polygon(data = biomes_dt,
                  aes(x      = temp_C,
                      y      = precp_cm,
                      fill   = Biome,
@@ -68,7 +68,7 @@ biomes_plot <- ggplot() +
                                  "Temperate grassland/desert"      = "#fdd67a",
                                  "Woodland/shrubland"              = "#d26e3f")) +
     # add unique combinations of precipitation & temperature
-    geom_point(data = extr.dt, 
+    geom_point(data = extr_dt, 
                aes(x      = Annual_mean_temp_C, 
                    y      = Annual_pp_cm,
                    # text will be ignored in ggplot but will be used for hovering purposes in plotly
@@ -84,7 +84,7 @@ biomes_plot <- ggplot() +
     labs(x = "Mean annual temperature (°C)",
          y = "Mean annual precipitation (cm)") +  
     # set range on OY axes and adjust the distance (gap) from OX axes
-    scale_y_continuous(limits = c(-5, round(max(extr.dt$Annual_pp_cm, na.rm = TRUE))+10), 
+    scale_y_continuous(limits = c(-5, round(max(extr_dt$Annual_pp_cm, na.rm = TRUE))+10), 
                        expand = c(0, 0)) +
     # set the general ggplot theme
     theme_bw() +
@@ -138,7 +138,7 @@ set.seed(1) # for jittering each time in the same way
 ggplotly(biomes_plot)
 
 # B) Use a spatial overlay tool
-PointsSP <- SpatialPoints(coords = extr.dt[!is.na(Annual_pp_cm), 
+PointsSP <- SpatialPoints(coords = extr_dt[!is.na(Annual_pp_cm), 
                                            c("Annual_mean_temp_C", 
                                              "Annual_pp_cm")])
 
@@ -148,7 +148,7 @@ biomes_polyg <- rgdal::readOGR(dsn    = "Whittaker biomes graph - digitize",
 plot(biomes_polyg); points(PointsSP)
 
 my.over <- sp::over(PointsSP, biomes_polyg)
-outside <- extr.dt[!is.na(Annual_pp_cm),][is.na(my.over$Biome),]
+outside <- extr_dt[!is.na(Annual_pp_cm),][is.na(my.over$Biome),]
 outside.unq <- unique(outside, by = c("Annual_pp_cm","Annual_mean_temp_C"))
 # setorder(outside.unq, Annual_mean_temp_C, Annual_pp_cm)
 write.csv(outside.unq, "Output/Outliers/outside_unque.csv")
@@ -182,7 +182,7 @@ myDT <- fread("Data/PL_ANALYSIS_02_10_2017.csv", colClasses = "character")
 myDT.sbs <- myDT[Community_Type_Author %like% "tundra",
                  .(unique_number,
                    Community_Type_Author)]
-tundra.dt <- merge(myDT.sbs, extr.dt,
+tundra.dt <- merge(myDT.sbs, extr_dt,
                    by = "unique_number")
 str(tundra.dt)
 

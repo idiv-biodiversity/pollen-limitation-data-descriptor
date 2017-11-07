@@ -37,7 +37,7 @@ my_biomes <- c("Tundra",
                "Temperate seasonal forest",
                "Temperate rain forest",
                "Tropical rain forest",
-               "Tropical seasonal forest/savana",
+               "Tropical seasonal forest/savanna",
                "Subtropical desert",
                "Temperate grassland/desert",
                "Woodland/shrubland")
@@ -58,15 +58,15 @@ biomes_plot <- ggplot() +
     scale_fill_manual(name   = "Biomes", # this will appear as the name of the legend as well
                       breaks = my_biomes,
                       labels = my_biomes,
-                      values = c("Tundra"                          = "#c2e1dd",
-                                 "Boreal forest"                   = "#a5c890",
-                                 "Temperate seasonal forest"       = "#97b669",
-                                 "Temperate rain forest"           = "#75a95e",
-                                 "Tropical rain forest"            = "#317a21",
-                                 "Tropical seasonal forest/savana" = "#a09700",
-                                 "Subtropical desert"              = "#dcbb50",
-                                 "Temperate grassland/desert"      = "#fdd67a",
-                                 "Woodland/shrubland"              = "#d26e3f")) +
+                      values = c("Tundra"                           = "#c2e1dd",
+                                 "Boreal forest"                    = "#a5c890",
+                                 "Temperate seasonal forest"        = "#97b669",
+                                 "Temperate rain forest"            = "#75a95e",
+                                 "Tropical rain forest"             = "#317a21",
+                                 "Tropical seasonal forest/savanna" = "#a09700",
+                                 "Subtropical desert"               = "#dcbb50",
+                                 "Temperate grassland/desert"       = "#fdd67a",
+                                 "Woodland/shrubland"               = "#d26e3f")) +
     # add unique combinations of precipitation & temperature
     geom_point(data = extr_dt, 
                aes(x      = Annual_mean_temp_C, 
@@ -102,7 +102,7 @@ biomes_plot
 # =================================================================================
 set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_12Oct17.pdf"), 
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_5nov17.pdf"), 
        width    = 8.5, 
        height   = 7.5, 
        units    = "cm",
@@ -110,7 +110,7 @@ ggsave(biomes_plot,
 
 set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_12Oct17.png"),
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_5nov17.png"),
        width    = 8.5, 
        height   = 7.5, 
        units    = "cm",

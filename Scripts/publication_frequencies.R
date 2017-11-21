@@ -10,7 +10,7 @@ library(ggplot2)
 # =================================================================================
 # Read & prepare data
 # =================================================================================
-# read latest dataset (prepared by Joanne)
+# read latest dataset
 PL_all <- fread("Data/PL_ANALYSIS_02_10_2017.csv", colClasses = "character")
 
 # get only columns of interest
@@ -25,6 +25,7 @@ PL[, Year := as.numeric(Year)]
 # which records got NA for variable Year?
 PL[is.na(Year)]
 
+# Aggregate
 PL_aggreg <- PL[!is.na(Year), 
                 .(N_publications = uniqueN(unique_study_number),
                   N_studies = uniqueN(unique_number)), # same as = .N
@@ -32,14 +33,16 @@ PL_aggreg <- PL[!is.na(Year),
 PL_aggreg <- PL_aggreg[order(Year)]
 PL_aggreg[, cumul_studies := cumsum(N_studies)]
 
-# https://rpubs.com/MarkusLoew/226759
-# https://whatalnk.github.io/r-tips/ggplot2-secondary-y-axis.nb.html
+# =================================================================================
+# Plot
+# =================================================================================
 
+# Set 2nd scale factor
+my_factor <- 0.02
 # should be in the range of 
 # max(PL_aggreg$cumul_studies)/max(PL_aggreg$N_publications)
 # factor can be the ratio of max value on left OY divided by max of right OY
 # my_factor <- max(PL_aggreg$N_publications)/max(PL_aggreg$cumul_studies)
-my_factor <- 0.02
 
 my_plot <- ggplot(data = PL_aggreg, 
                   aes(x = Year)) +
@@ -69,3 +72,10 @@ my_plot
 ggsave(plot = my_plot,
        filename = "Output/Publication_freq.pdf", 
        width = 12, height = 10, scale = 1, units = "cm")
+
+# =================================================================================
+# References
+# =================================================================================
+# https://rpubs.com/MarkusLoew/226759
+# https://whatalnk.github.io/r-tips/ggplot2-secondary-y-axis.nb.html
+# using the grob approach: http://rpubs.com/kohske/dual_axis_in_ggplot2

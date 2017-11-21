@@ -42,15 +42,14 @@ PL_aggreg[, cumul_studies := cumsum(N_studies)]
 my_factor <- 0.02
 
 my_plot <- ggplot(data = PL_aggreg, 
-                  aes(x = Year))
-my_plot <- my_plot + geom_bar(aes(y = N_publications), 
-                              stat = "identity",
-                              fill = "gray60") 
-my_plot <- my_plot + geom_line(aes(y = cumul_studies * my_factor),
-                               size = 1)
-my_plot <- my_plot + scale_y_continuous(sec.axis = sec_axis(trans = ~ . / my_factor, 
-                                                            name = "Cumulative number of pollen limitation studies"))
-my_plot <- my_plot + 
+                  aes(x = Year)) +
+    geom_bar(aes(y = N_publications), 
+             stat = "identity",
+             fill = "gray60") +
+    geom_line(aes(y = cumul_studies * my_factor),
+              size = 1) +
+    scale_y_continuous(sec.axis = sec_axis(trans = ~ . / my_factor, 
+                                           name = "Cumulative number of pollen limitation studies")) +
     # set axis labels
     labs(x = "Year of publication", 
          y = "Number of publications") + 
@@ -63,7 +62,7 @@ my_plot <- my_plot +
            # adjust text in X-axis title
            axis.title.x = element_text(size = 10, face = "bold"),
            # adjust text in Y-axis title
-           axis.title.y = element_text(size = 10, face = "bold") ) 
+           axis.title.y = element_text(size = 10, face = "bold") )
 
 my_plot
 

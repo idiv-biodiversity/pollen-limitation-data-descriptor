@@ -6,6 +6,8 @@
 
 library(data.table)
 library(ggplot2)
+library(ggsci)
+library(scales)
 
 # =================================================================================
 # Read & prepare data
@@ -44,15 +46,22 @@ my_factor <- 0.02
 # factor can be the ratio of max value on left OY divided by max of right OY
 # my_factor <- max(PL_aggreg$N_publications)/max(PL_aggreg$cumul_studies)
 
+# Experiment with color
+mypal = ggsci::pal_npg("nrc", alpha = 1)(2)
+scales::show_col(mypal); mypal
+
 my_plot <- ggplot(data = PL_aggreg, 
                   aes(x = Year)) +
     geom_bar(aes(y = N_publications), 
              stat = "identity",
-             fill = "gray60") +
+             fill = "#4DBBD5FF") +
     geom_line(aes(y = cumul_studies * my_factor),
-              size = 1) +
+              size = 1,
+              color = "#E64B35FF") +
     scale_y_continuous(sec.axis = sec_axis(trans = ~ . / my_factor, 
-                                           name = "Cumulative number of pollen limitation studies")) +
+                                           name = "Cumulative number of pollen limitation studies"),
+                       limits = c(0, 75),
+                       expand = c(0, 0)) +
     # set axis labels
     labs(x = "Year of publication", 
          y = "Number of publications") + 
@@ -61,11 +70,17 @@ my_plot <- ggplot(data = PL_aggreg,
     theme( panel.grid.minor = element_blank(), # eliminate minor grids
            # set font family for all text within the plot ("serif" should work as "Times New Roman")
            # note that this can be overridden with other adjustment functions below
-           text = element_text(family="serif"),
+           text = element_text(family = "serif"),
            # adjust text in X-axis title
-           axis.title.x = element_text(size = 10, face = "bold"),
+           axis.title.x = element_text(size = 10, 
+                                       face = "bold"),
            # adjust text in Y-axis title
-           axis.title.y = element_text(size = 10, face = "bold") )
+           axis.title.y = element_text(size = 10, 
+                                       face = "bold"),
+           axis.title.y.right = element_text(size = 10, 
+                                             face = "bold", 
+                                             angle = 90,
+                                             colour = "#E64B35FF") )
 
 my_plot
 

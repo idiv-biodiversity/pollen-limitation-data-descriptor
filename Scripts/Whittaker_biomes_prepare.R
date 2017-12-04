@@ -48,6 +48,6 @@ for (i in 1:length(biomes.poly@polygons)){
 proj4string(biomes.poly) <- ""
 
 writeOGR(obj    = biomes.poly,
-         dsn    = "Whittaker biomes graph - digitize", 
+         dsn    = "Whittaker biomes graph - digitize/Whittaker_biomes_shp", 
          layer  = "Whittaker_biomes", 
          driver = "ESRI Shapefile")

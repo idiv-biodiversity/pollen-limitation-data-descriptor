@@ -12,6 +12,8 @@ library(RColorBrewer)
 library(picante)
 library(ape)
 library(pez)
+
+# for validating species names 
 library(taxize)
 library(Taxonstand)
 library(wikitaxa)
@@ -65,42 +67,59 @@ Phylo_info <- merge(x = Phylo_info,
 # -----------------------------------------------------------------------------
 # Check some taxa names
 # -----------------------------------------------------------------------------
-my_sp <- fread("data/phylogeny/taxa_to_check.csv")
-my_sp[, taxa4tpl := gsub(pattern = "_", replacement = " ", x = taxa, fixed = TRUE)]
+my_sp <- fread("Output/taxa_to_check_VS.csv")
 
 my_sp <- merge(x = my_sp,
                y = Phylo_info,
                by.x = "taxa",
                by.y = "Species_accepted_names",
-               all.x = TRUE)
+               all.x = TRUE, sort = FALSE)
 
-my_tpl <- Taxonstand::TPL(splist = my_sp$taxa4tpl)
+# replace _ with white space
+my_sp[, taxa := gsub(pattern = "_", replacement = " ", x = taxa)]
+
+# gives errors
+# taxize::classification(x = my_sp$taxa, db = "tol")
+
+# Connects to The Plant List (TPL) website and validates the names
+my_tpl <- data.table(Taxonstand::TPL(splist = my_sp$taxa))
+setnames(my_tpl, paste0(names(my_tpl), "_TPL"))
 my_tpl
 
 my_sp <- merge(x = my_sp,
-               y = my_tpl[, c("Taxon", "Taxonomic.status", "Family", "New.Genus",
-                              "New.Species", "New.Taxonomic.status", "Typo")],
-               by.x = "taxa4tpl",
-               by.y = "Taxon",
-               all.x = TRUE)
+               y = my_tpl[, c("Taxon_TPL", "Taxonomic.status_TPL", "Family_TPL", "New.Genus_TPL",
+                              "New.Species_TPL", "New.Taxonomic.status_TPL", "Typo_TPL")],
+               by.x = "taxa",
+               by.y = "Taxon_TPL",
+               all.x = TRUE, sort = FALSE)
 
-my_families <- unique(my_sp$Family.y)
+my_families <- unique(my_sp$Family_TPL)
 my_orders <- vector(mode = "character", length = length(my_families))
 
+# Retrieve info from WikiSpecies about orders based on given families.
+# Had to use WikiSpeceis because TPL does not return order.
+# Try running several times if NA-s are returned - I guess it depends on the API connection somehow.
 for (i in 1:length(my_families)){
-    my_dt <- data.table(wt_wikispecies(name = my_families[i])$classification)
-    my_orders[i] <- my_dt[rank == "Ordo", name]
+    my_dt <- data.table(wikitaxa::wt_wikispecies(name = my_families[i])$classification)
+    # some cases might not match properly and does not retrieve order information,
+    # so, assign NA for such cases
+    my_ord <- my_dt[rank == "Ordo", name]
+    my_orders[i] <- ifelse(length(my_ord) != 0, my_ord, NA)
 }
 
-my_orders_df <- data.frame(my_families, my_orders)
+my_orders_df <- data.frame(my_families, order_wikitaxa = my_orders)
 
 my_sp <- merge(x = my_sp,
                y = my_orders_df,
-               by.x = "Family.y",
+               by.x = "Family_TPL",
                by.y = "my_families",
                all.x = TRUE, sort = FALSE)
 
-fwrite(my_sp, file = "Output/sp_to_check4tree.csv")
+# move "Family_TPL" column from first to last position
+setcolorder(my_sp, c(setdiff(names(my_sp), "Family_TPL"), "Family_TPL"))
+
+writexl::write_xlsx(my_sp, path = "Output/taxa_to_check_TPL_suggest_VS.xlsx")
+
 
 # -----------------------------------------------------------------------------
 # Build phylogeny
@@ -146,7 +165,8 @@ names(APG4_gr)
 length(APG4_gr)
 SiteTree_gr <- ggtree::groupOTU(SiteTree, APG4_gr)
 str(SiteTree_gr)
-# There is a "0" group label - not sure why this happens, but below is the fix:
+# There is a "0" group label - "0 is for those didn't belong to any group."
+# https://github.com/GuangchuangYu/ggtree/issues/127
 levels(attributes(SiteTree_gr)$group) # check all group labels
 # overwrite "0" with "Basal" so that the basal segments get the same color.
 # similar to: https://en.wikipedia.org/wiki/Phylogenetic_tree#/media/File:CollapsedtreeLabels-simplified.svg
@@ -170,7 +190,9 @@ scales::show_col(my_cols); my_cols
 tree_pl <- 
     ggtree(tr      = SiteTree_gr, 
            mapping = aes(color = group), 
-           layout  = 'circular') +
+           layout  = 'circular',
+           # set line thikness
+           size = 0.1) +
     # adjust coloring of main groups
     scale_color_manual(name = 'Clade',
                        values = my_cols)
@@ -201,23 +223,24 @@ coord_groups[, y_mid := rowMeans(.SD), .SDcols = c("y1", "y2")]
 coord_groups[, y1_adj := ifelse(y1 == y2, y1 - 0.25, y1)]
 coord_groups[, y2_adj := ifelse(y1 == y2, y2 + 0.25, y2)]
 
-# labels need angle adjustment for cases between 90 and 270 dg
+# Labels need angle adjustment for cases between 90 and 270 dg
 coord_groups[, angle_adj := angle]
 coord_groups[angle %between% c(90, 180), angle_adj := angle_adj + 180]
 coord_groups[angle %between% c(180, 270), angle_adj := angle_adj - 180]
 
-# labels with angles between 90 and 270 dg
-# need change of horizontal adjustment argument from 0 to 1
+# Labels with angles between 90 and 270 dg
+# need change of horizontal adjustment argument from 0 to 1.
 coord_groups[, hjust_adj := ifelse(angle %between% c(90, 270), yes = 1, no = 0)]
 
 # if needed, coloring could be binary 
 # coord_groups[, col := ifelse(.I%%2, 0.5, 1)]
 
-my_x <- max(tree_dt$x) + 3
+# Define variable to control x coordinate of segments & labels
+my_x <- max(tree_dt$x) + 5
 
 test_tree <- 
     tree_pl + 
-    # add line segments for each group
+    # Add line segments for each group.
     geom_segment(data = coord_groups,
                  aes(x = my_x, 
                      y = y1_adj, 
@@ -225,9 +248,9 @@ test_tree <-
                      yend = y2_adj),
                  color = "black",
                  lineend = "butt",
-                 size = 3,
+                 size = 1,
                  show.legend = FALSE) +
-    # add text group labels at the middle of each segment
+    # Add text group labels at the middle of each segment.
     geom_text(data = coord_groups,
               aes(x = my_x,
                   y = y_mid,
@@ -235,16 +258,29 @@ test_tree <-
                   hjust = hjust_adj,
                   label = order_group),
               vjust = 0.5, 
-              size  = 5,
-              nudge_x = 5, # offsetting text
+              size  = 1.5,
+              nudge_x = 7, # Offsetting label from its default x coordinate.
               color = "black",
               show.legend = FALSE) +
-    # adjust theme components
-    theme(legend.position = "right")
+    # Adjust theme components
+    theme(
+        # Set font size & family - affects legend only.
+        # ("serif" is "Times New Roman").
+        text = element_text(size = 8, family = "serif"),
+        # Grab bottom-right (x=1, y=0) legend corner 
+        legend.justification = c(1,0),
+        # and position it in the bottom-right plot area.
+        legend.position = c(1.145, 0.025),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
+        # Set spacing between legend items (keys).
+        legend.key.height = unit(4, "mm"),
+        # Set margin around entire plot.
+        plot.margin = unit(c(t = -0.5, r = 1.3, b = -0.35, l = -0.2), "cm")
+    )
 
 ggsave(plot = test_tree,
-       filename = "Output/Phylo_tree_draft8.pdf", 
-       width = 10, height = 10, scale = 5, units = "cm")
+       filename = "Output/Phylo_tree_draft7.pdf", 
+       width = 10, height = 8, scale = 1, units = "cm")
 
 # =============================================================================
 # References

@@ -2,6 +2,7 @@
 ## Phylogeny tree graph for pollen limitation dataset
 ###############################################################################
 
+# For general data manipulation & visualization
 library(readxl)
 library(data.table)
 library(ggplot2)
@@ -9,29 +10,32 @@ library(glue)
 library(lazyeval)
 library(RColorBrewer)
 
+# For data tree manipulation
 library(picante)
 library(ape)
 library(pez)
+library(geiger)
 
-# for validating species names 
-library(taxize)
-library(Taxonstand)
-library(wikitaxa)
-
-# Intsall ggtree from bioconductor
+# For data tree visualization
+# intsall ggtree from bioconductor
 # source("https://bioconductor.org/biocLite.R")
 # biocLite("ggtree")
 # Installing from GitHub does not work at this time (Dec. 2017).
-
 # load/attach ggtree package
 library(ggtree)
 # more about ggtree at: 
 # https://bioconductor.org/packages/release/bioc/html/ggtree.html
 
+# For validating species names 
+library(taxize)
+library(Taxonstand)
+library(wikitaxa)
+
 # =============================================================================
 # Read & prepare data
 # =============================================================================
-# Read species names and their corresponding family (file from Tiffany)
+# Read species names and their corresponding family (file from Tiffany).
+# This file might be optional.
 data_aggregated <- data.table(readxl::read_excel(path = "Data/phylogeny/specieslist.xlsx", 
                                                  sheet     = 1, 
                                                  col_names = TRUE))
@@ -50,13 +54,6 @@ data.table::setnames(Phylo_info, gsub("\\s+", "_", names(Phylo_info)))
 # This is important because the key to merge the files is the species names
 all.equal(sort(Phylo_info$Species_accepted_names, na.last = TRUE), 
           sort(dataspecies$Species_accepted_names, na.last = TRUE))
-# if not TRUE then check differences
-setdiff(dataspecies$Species_accepted_names, Phylo_info$Species_accepted_names)
-setdiff(Phylo_info$Species_accepted_names, dataspecies$Species_accepted_names)
-# "Physocarpus_amurensis" "Silene_stockenii" where added in Phylogeny information_VS.xlsx
-# as they were present in the tree object already.
-# Need checking Phylogeny information_VS.xlsx if I added correct info for these species!
-# for now, these two are missing family info
 
 # Merge the two files
 Phylo_info <- merge(x = Phylo_info,
@@ -122,30 +119,38 @@ writexl::write_xlsx(my_sp, path = "Output/taxa_to_check_TPL_suggest_VS.xlsx")
 
 
 # -----------------------------------------------------------------------------
-# Build phylogeny
+# Prepare phylogeny tree for plotting
 # -----------------------------------------------------------------------------
 # Read tree from Tiffany
 tree <- read.tree("Data/phylogeny/Aggre.tree.tre")
 tree$tip.label[1:5] # check formating of first 5 species names
 # tree <- read.tree("Data/phylogeny/phylo1265species.tre")
+
+# Note that "Physocarpus_amurensis" "Silene_stockenii" are extra in the tree 
+# as opposed to file Phylogeny information.xlsx
+my_sp <- 1:nrow(Phylo_info)
+names(my_sp) <- Phylo_info$Species_accepted_names
+geiger::name.check(phy = tree, data = my_sp)
+# Or check using setdiff
+# setdiff(SiteTree$tip.label, Phylo_info$Species_accepted_names)
+# setdiff(Phylo_info$Species_accepted_names, SiteTree$tip.label)
+
+# Remove extra taxa from phylogeny
+tree <- ape::drop.tip(phy = tree, 
+                      tip = c("Physocarpus_amurensis", "Silene_stockenii"))
+
+# Why need congeneric.merge if the two trees are identical?
+# (this part was in Tiffany's script "phylogeny code3_Tiffany.R")
 SiteTree <- pez::congeneric.merge(tree    = tree, 
                                   species = Phylo_info$Species_accepted_names, 
                                   split   = "_") # space or "_" doesn't seem to make a difference
 all.equal(tree, SiteTree)
 identical(tree, SiteTree)
-# Why need congeneric.merge if the two trees are identical?
 
-# Note that "Physocarpus_amurensis" "Silene_stockenii" were extra in the tree 
-# when using Phylogeny information.xlsx instead of Phylogeny information_VS.xlsx
-setdiff(SiteTree$tip.label, Phylo_info$Species_accepted_names)
-setdiff(Phylo_info$Species_accepted_names, SiteTree$tip.label)
-
-# Merge tree tip labels with data from Phylo_info;
-# tip.label needs to be used exactly as such (with this name).
-# This is needed for merging data with the tree based on tip labels with  %<+% operator
+# Merge tree tip labels with annotation data from Phylo_info;
+# "tip.label" column name needs to be used exactly as such (with this name).
+# This will be needed for merging annotation data with the tree (with  %<+% operator) using tip.label as key.
 tip_lbs <- data.table(tip.label = SiteTree$tip.label)
-# Note that Phylo_info_merged may contain extra 2 rows if Phylogeny information.xlsx was used
-# (the 2 extra species discussed above)
 Phylo_info_merged <- merge(x = tip_lbs, 
                            y = Phylo_info, 
                            by.x  = "tip.label", 
@@ -158,20 +163,17 @@ Phylo_info_merged <- merge(x = tip_lbs,
 # Split by APG4_group data - for coloring purposes
 # see https://bioconductor.org/packages/devel/bioc/vignettes/ggtree/inst/doc/treeAnnotation.html
 # or http://www.ggplot2-exts.org/ggtree.html
-length(Phylo_info_merged$tip.label)
-length(Phylo_info_merged$APG4_group)
 APG4_gr <- split(Phylo_info_merged$tip.label, Phylo_info_merged$APG4_group)
 names(APG4_gr)
-length(APG4_gr)
 SiteTree_gr <- ggtree::groupOTU(SiteTree, APG4_gr)
 str(SiteTree_gr)
 # There is a "0" group label - "0 is for those didn't belong to any group."
 # https://github.com/GuangchuangYu/ggtree/issues/127
 levels(attributes(SiteTree_gr)$group) # check all group labels
-# overwrite "0" with "Basal" so that the basal segments get the same color.
+# Overwrite "0" with "Basal" so that the basal segments get the same color.
 # similar to: https://en.wikipedia.org/wiki/Phylogenetic_tree#/media/File:CollapsedtreeLabels-simplified.svg
 levels(attributes(SiteTree_gr)$group)[1] <- "Basal"
-# reorder factor levels if needed
+# Reorder factor levels if needed
 attributes(SiteTree_gr)$group <- factor(x = attributes(SiteTree_gr)$group, 
                                         levels = c("Basal", 
                                                    "Eudicot", 
@@ -238,9 +240,9 @@ coord_groups[, hjust_adj := ifelse(angle %between% c(90, 270), yes = 1, no = 0)]
 # Define variable to control x coordinate of segments & labels
 my_x <- max(tree_dt$x) + 5
 
-test_tree <- 
+tree_labeled <- 
     tree_pl + 
-    # Add line segments for each group.
+    # Add line segments for each group. (geom_cladelabel failed for circular tree)
     geom_segment(data = coord_groups,
                  aes(x = my_x, 
                      y = y1_adj, 
@@ -264,8 +266,8 @@ test_tree <-
               show.legend = FALSE) +
     # Adjust theme components
     theme(
-        # Set font size & family - affects legend only.
-        # ("sans" is "Arial").
+        # Set font size & family - affects legend only 
+        # "sans" = "Arial" and is the default on Windows OS; check windowsFonts()
         text = element_text(size = 8, family = "sans"),
         # Grab bottom-right (x=1, y=0) legend corner 
         legend.justification = c(1,0),
@@ -278,7 +280,7 @@ test_tree <-
         plot.margin = unit(c(t = -0.5, r = 1.3, b = -0.35, l = -0.2), "cm")
     )
 
-ggsave(plot = test_tree,
+ggsave(plot = tree_labeled,
        filename = "Output/Phylo_tree_draft7.pdf", 
        width = 10, height = 8, scale = 1, units = "cm")
 
@@ -292,3 +294,5 @@ ggsave(plot = test_tree,
 # tidytree:
 #   https://cran.r-project.org/web/packages/tidytree/vignettes/tidytree.html
 #   https://cran.r-project.org/web/packages/tidytree/index.html
+# HowTo/DataTreeManipulation
+#   https://www.r-phylo.org/wiki/HowTo/DataTreeManipulation

@@ -73,9 +73,9 @@ my_plot <-
         panel.grid.major = element_line(size = 0.3, 
                                         linetype = "longdash"),
         panel.grid.minor = element_blank(), # eliminate minor grids
-        # set font family for all text within the plot ("serif" should work as "Times New Roman")
+        # set font family for all text within the plot ("sans" should work as "Arial")
         # note that this can be overridden with other adjustment functions below
-        text = element_text(family = "serif", size = 8),
+        text = element_text(family = "sans", size = 8),
         # adjust text in X-axis title
         # axis.title.x = element_text(size = 10),
         # adjust title of first/left Y-axis

@@ -265,8 +265,8 @@ test_tree <-
     # Adjust theme components
     theme(
         # Set font size & family - affects legend only.
-        # ("serif" is "Times New Roman").
-        text = element_text(size = 8, family = "serif"),
+        # ("sans" is "Arial").
+        text = element_text(size = 8, family = "sans"),
         # Grab bottom-right (x=1, y=0) legend corner 
         legend.justification = c(1,0),
         # and position it in the bottom-right plot area.

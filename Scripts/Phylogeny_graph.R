@@ -274,14 +274,116 @@ tree_labeled <-
         # and position it in the bottom-right plot area.
         legend.position = c(1.145, 0.025),
         legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
-        # Set spacing between legend items (keys).
+        # Set height of legend items (keys).
         legend.key.height = unit(4, "mm"),
         # Set margin around entire plot.
         plot.margin = unit(c(t = -0.5, r = 1.3, b = -0.35, l = -0.2), "cm")
     )
 
+ggsave(plot = tree_ES_bars,
+       filename = "Output/hylo_tree_draft7.png", 
+       width = 10, height = 8, scale = 1, units = "cm", dpi = 600)
+
 ggsave(plot = tree_labeled,
        filename = "Output/Phylo_tree_draft7.pdf", 
+       width = 10, height = 8, scale = 1, units = "cm")
+
+# -----------------------------------------------------------------------------
+# Plot tree with ES bars
+# -----------------------------------------------------------------------------
+# Read ES (effect size) data
+ES_dt <- data.table(readxl::read_excel(path = "Data/PL_masters_02_10_2017.xlsx", 
+                                       sheet     = 1, 
+                                       col_names = TRUE))
+# Select needed columns
+ES_dt <- ES_dt[!is.na(Species_accepted_names), .(Species_accepted_names, ES_mst.VS)]
+# Compute average ES per species
+ES_dt <- ES_dt[, .(ES_mst.VS = mean(ES_mst.VS)), by = Species_accepted_names]
+# Join mean ES values to each species
+tree_dt <- merge(x = tree_dt,
+                 y = ES_dt,
+                 by.x = "label",
+                 by.y = "Species_accepted_names")
+tree_dt[, ES_categ := ifelse(ES_mst.VS <= 0, "neg", "pos")]
+
+# Define variable to control the bas x coordinate of bars (segments)
+my_factor <- 10
+x_base <- max(tree_dt$x) + abs(min(tree_dt$ES_mst.VS, na.rm = TRUE))*my_factor + 2
+
+# Define variable to control x coordinate of segments & labels
+my_x <- x_base + max(tree_dt$ES_mst.VS, na.rm = TRUE)*my_factor + 5
+
+tree_ES_bars <- 
+    tree_pl + 
+    # Add a background disc to plot ES bars on top of it
+    geom_rect(data = tree_dt,
+              aes(xmin = x_base + min(ES_mst.VS, na.rm = TRUE)*my_factor,
+                  ymin = 0,
+                  xmax = x_base + max(ES_mst.VS, na.rm = TRUE)*my_factor,
+                  ymax = max(y)+1), # +1 to force complete circle (otherwise a stripe of white remains)
+              color = NA, # set NA so to avoid coloring borders
+              fill = "#deebf7", # or try "#8da0cb"
+              alpha = 0.1) +
+    # Add ES bars
+    geom_rect(data = tree_dt,
+              aes(xmin = x_base,
+                  ymin = y - 0.5,
+                  xmax = x_base + ES_mst.VS*my_factor,
+                  ymax = y + 0.5,
+                  fill = ES_categ),
+              # no borders
+              color = NA) +
+    # Fill the ES bars
+    scale_fill_manual(name   = 'ES',
+                      breaks = c("neg", "pos"),
+                      values = c("neg" = "#66c2a5",
+                                 "pos" = "#fc8d62"),
+                      labels = c("negative", "positive")) +
+    # Add line segments for each group.
+    geom_segment(data = coord_groups,
+                 aes(x = my_x, 
+                     y = y1_adj, 
+                     xend = my_x, 
+                     yend = y2_adj),
+                 color = "black",
+                 lineend = "butt",
+                 size = 1,
+                 show.legend = FALSE) +
+    # Add text group labels at the middle of each segment.
+    geom_text(data = coord_groups,
+              aes(x = my_x,
+                  y = y_mid,
+                  angle = angle_adj,
+                  hjust = hjust_adj,
+                  label = order_group),
+              vjust = 0.5, 
+              size  = 1.5,
+              nudge_x = 7, # Offsetting label from its default x coordinate.
+              color = "black",
+              show.legend = FALSE) +
+    # Adjust theme components
+    theme(
+        # Set font size & family - affects legend only 
+        # "sans" = "Arial" and is the default on Windows OS; check windowsFonts()
+        text = element_text(size = 8, family = "sans"),
+        # Grab bottom-right (x=1, y=0) legend corner 
+        legend.justification = c(1,0),
+        # and position it in the bottom-right plot area.
+        legend.position = c(1.2, 0.025),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
+        legend.key = element_rect(size = 1, color = 'white'),
+        # Set height of legend items (keys).
+        legend.key.height = unit(3, "mm"),
+        # Set margin around entire plot.
+        plot.margin = unit(c(t = -0.5, r = 1.7, b = -0.35, l = -0.05), "cm")
+    )
+
+ggsave(plot = tree_ES_bars,
+       filename = "Output/Phylo_tree_ES_bars_draft3.png", 
+       width = 10, height = 8, scale = 1, units = "cm", dpi = 600)
+
+ggsave(plot = tree_labeled,
+       filename = "Output/Phylo_tree_ES_bars_draft3.pdf", 
        width = 10, height = 8, scale = 1, units = "cm")
 
 # =============================================================================

@@ -126,6 +126,9 @@ tree <- read.tree("Data/phylogeny/Aggre.tree.tre")
 tree$tip.label[1:5] # check formating of first 5 species names
 # tree <- read.tree("Data/phylogeny/phylo1265species.tre")
 
+# Delete "Hebe_macrocarpa" - there is an issue of placement in the tree with this species
+Phylo_info <- Phylo_info[Species_accepted_names != "Hebe_macrocarpa"]
+
 # Note that "Physocarpus_amurensis" "Silene_stockenii" are extra in the tree 
 # as opposed to file Phylogeny information.xlsx
 my_sp <- 1:nrow(Phylo_info)
@@ -137,7 +140,9 @@ geiger::name.check(phy = tree, data = my_sp)
 
 # Remove extra taxa from phylogeny
 tree <- ape::drop.tip(phy = tree, 
-                      tip = c("Physocarpus_amurensis", "Silene_stockenii"))
+                      tip = c("Physocarpus_amurensis",
+                              "Silene_stockenii",
+                              "Hebe_macrocarpa"))
 
 # Why need congeneric.merge if the two trees are identical?
 # (this part was in Tiffany's script "phylogeny code3_Tiffany.R")
@@ -280,12 +285,12 @@ tree_labeled <-
         plot.margin = unit(c(t = -0.5, r = 1.3, b = -0.35, l = -0.2), "cm")
     )
 
-ggsave(plot = tree_ES_bars,
-       filename = "Output/hylo_tree_draft7.png", 
+ggsave(plot = tree_labeled,
+       filename = "Output/Phylo_tree_draft8.png", 
        width = 10, height = 8, scale = 1, units = "cm", dpi = 600)
 
 ggsave(plot = tree_labeled,
-       filename = "Output/Phylo_tree_draft7.pdf", 
+       filename = "Output/Phylo_tree_draft8.pdf", 
        width = 10, height = 8, scale = 1, units = "cm")
 
 # -----------------------------------------------------------------------------
@@ -306,13 +311,14 @@ tree_dt <- merge(x = tree_dt,
                  by.y = "Species_accepted_names")
 tree_dt[, ES_categ := ifelse(ES_mst.VS <= 0, "neg", "pos")]
 
-# Define variable to control the bas x coordinate of bars (segments)
+# Define variable to control the x coordinates of bars (segments)
 my_factor <- 10
 x_base <- max(tree_dt$x) + abs(min(tree_dt$ES_mst.VS, na.rm = TRUE))*my_factor + 2
 
-# Define variable to control x coordinate of segments & labels
+# Define variable to control the x coordinates of segments & labels
 my_x <- x_base + max(tree_dt$ES_mst.VS, na.rm = TRUE)*my_factor + 5
 
+# Plot
 tree_ES_bars <- 
     tree_pl + 
     # Add a background disc to plot ES bars on top of it
@@ -334,7 +340,7 @@ tree_ES_bars <-
               # no borders
               color = NA) +
     # Fill the ES bars
-    scale_fill_manual(name   = 'ES',
+    scale_fill_manual(name   = 'Effect size',
                       breaks = c("neg", "pos"),
                       values = c("neg" = "#66c2a5",
                                  "pos" = "#fc8d62"),
@@ -369,7 +375,7 @@ tree_ES_bars <-
         # Grab bottom-right (x=1, y=0) legend corner 
         legend.justification = c(1,0),
         # and position it in the bottom-right plot area.
-        legend.position = c(1.2, 0.025),
+        legend.position = c(1.2, 0.04),
         legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
         legend.key = element_rect(size = 1, color = 'white'),
         # Set height of legend items (keys).
@@ -379,11 +385,11 @@ tree_ES_bars <-
     )
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft3.png", 
+       filename = "Output/Phylo_tree_ES_bars_draft5.png", 
        width = 10, height = 8, scale = 1, units = "cm", dpi = 600)
 
-ggsave(plot = tree_labeled,
-       filename = "Output/Phylo_tree_ES_bars_draft3.pdf", 
+ggsave(plot = tree_ES_bars,
+       filename = "Output/Phylo_tree_ES_bars_draft5.pdf", 
        width = 10, height = 8, scale = 1, units = "cm")
 
 # =============================================================================

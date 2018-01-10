@@ -46,12 +46,25 @@ ES_dt_unq[, c("X.prj","Y.prj") := data.table(rgdal::project(xy   = cbind(lon_dec
 load("Data/NaturalEarth.RData"); setDT(lbl.Y); setDT(lbl.X)
 # Details about NaturalEarth shapefiles:
 #   The files were already downloaded from http://www.naturalearthdata.com/
-#   Graticules were adjusted to 10 dg for latitude lines and 20 dg for longitude lines (editing was carried in ArcMap)
+#   Graticules were adjusted to 10 dg for latitude lines and 20 dg for longitude lines 
+#  (some editing was carried in ArcMap)
 
 # Project from long-lat (unprojected) to Robinson projection
 NE_countries_rob  <- spTransform(NE_countries, CRS("+proj=robin"))
 NE_graticules_rob <- spTransform(NE_graticules, CRS("+proj=robin"))
 NE_box_rob        <- spTransform(NE_box, CRS("+proj=robin"))
+
+# Shift longitude of OX graticule labales. 
+# This was needed because for example 160dg label ended up 
+# on the 180 longitude line when projecting to Robinson.
+# For each degree in the vector 
+seq(from = 160, to = 0, by = -20)
+# apply the corersponding shift from below 
+shift <- c(10, 10, 9, 8, 8, 5, 2, 0, 0)
+lbl.X[, shift := rep(c(shift, -rev(shift)[-1]),2)]
+lbl.X
+lbl.X[, lon := lon - shift] # apply shift
+lbl.X[, shift := NULL] # delete column
 
 # Project labales for graticules to Robinson
 lbl.Y[, c("X.prj","Y.prj") := data.table(rgdal::project(xy   = cbind(lon, lat),
@@ -153,7 +166,7 @@ my_map_ES_categ <- my_base_map +
         # Set height of legend items (keys).
         legend.key.height = unit(3, "mm"),
         # Set margin around entire plot.
-        plot.margin = unit(c(t = -0.35, r = 1, b = -0.4, l = -0.5), "cm")
+        plot.margin = unit(c(t = 0, r = 0.8, b = 0, l = -0.5), "cm")
     )
 
 ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_5.pdf", 
@@ -244,5 +257,5 @@ my_map_ES_cls <- my_base_map +
         plot.margin = unit(c(t = -0.35, r = 1, b = -0.4, l = -0.5), "cm")
     )
 
-ggsave(plot = my_map_ES_cls, filename = "Output/Global_map_ES_cls_draft_6.pdf", 
+ggsave(plot = my_map_ES_cls, filename = "Output/Global_map_ES_cls_draft_5.pdf", 
        width = 14, height = 7, units = "cm")

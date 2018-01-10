@@ -286,9 +286,10 @@ ggsave(plot = tree_labeled,
 # Plot tree with ES bars
 # -----------------------------------------------------------------------------
 # Read ES (effect size) data
-ES_dt <- data.table(readxl::read_excel(path = "Data/PL_masters_02_10_2017.xlsx", 
-                                       sheet     = 1, 
-                                       col_names = TRUE))
+# MasterES_aggreg_pop.csv was obtained by applying the aggregation code on PL_ANALYSIS_02_10_2017.csv
+# This file is originallly located in the folder
+# C:\Dropbox (iDiv)\_iDiv\Projects\pollen_limitation\Extract\Output
+ES_dt <- fread("Data/MasterES_aggreg_pop.csv")
 # Select needed columns
 ES_dt <- ES_dt[!is.na(Species_accepted_names), .(Species_accepted_names, ES_mst.VS)]
 # Compute average ES per species
@@ -374,11 +375,11 @@ tree_ES_bars <-
     )
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft7.png", 
+       filename = "Output/Phylo_tree_ES_bars_draft8.png", 
        width = 10, height = 8, scale = 1, units = "cm", dpi = 600)
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft7.pdf", 
+       filename = "Output/Phylo_tree_ES_bars_draft8.pdf", 
        width = 10, height = 8, scale = 1, units = "cm")
 
 # =============================================================================

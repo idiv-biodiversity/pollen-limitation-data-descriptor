@@ -122,12 +122,8 @@ writexl::write_xlsx(my_sp, path = "Output/taxa_to_check_TPL_suggest_VS.xlsx")
 # Prepare phylogeny tree for plotting
 # -----------------------------------------------------------------------------
 # Read tree from Tiffany
-tree <- read.tree("Data/phylogeny/Aggre.tree.tre")
+tree <- read.tree("Data/phylogeny/Aggre.tree_new.tre")
 tree$tip.label[1:5] # check formating of first 5 species names
-# tree <- read.tree("Data/phylogeny/phylo1265species.tre")
-
-# Delete "Hebe_macrocarpa" - there is an issue of placement in the tree with this species
-Phylo_info <- Phylo_info[Species_accepted_names != "Hebe_macrocarpa"]
 
 # Note that "Physocarpus_amurensis" "Silene_stockenii" are extra in the tree 
 # as opposed to file Phylogeny information.xlsx
@@ -139,18 +135,11 @@ geiger::name.check(phy = tree, data = my_sp)
 # setdiff(Phylo_info$Species_accepted_names, SiteTree$tip.label)
 
 # Remove extra taxa from phylogeny
-tree <- ape::drop.tip(phy = tree, 
-                      tip = c("Physocarpus_amurensis",
-                              "Silene_stockenii",
-                              "Hebe_macrocarpa"))
-
-# Why need congeneric.merge if the two trees are identical?
-# (this part was in Tiffany's script "phylogeny code3_Tiffany.R")
-SiteTree <- pez::congeneric.merge(tree    = tree, 
-                                  species = Phylo_info$Species_accepted_names, 
-                                  split   = "_") # space or "_" doesn't seem to make a difference
-all.equal(tree, SiteTree)
-identical(tree, SiteTree)
+SiteTree <- ape::drop.tip(phy = tree, 
+                          tip = c("Physocarpus_amurensis",
+                                  "Silene_stockenii"))
+# (I think) since there are no species that need to be added to the tree, 
+# then no need of using pez::congeneric.merge()
 
 # Merge tree tip labels with annotation data from Phylo_info;
 # "tip.label" column name needs to be used exactly as such (with this name).
@@ -162,8 +151,6 @@ Phylo_info_merged <- merge(x = tip_lbs,
                            by.y  = "Species_accepted_names", 
                            all.x = TRUE, 
                            sort  = FALSE)
-
-# Phylo_info_merged[is.na(order_group), order_group := "Other"]
 
 # Split by APG4_group data - for coloring purposes
 # see https://bioconductor.org/packages/devel/bioc/vignettes/ggtree/inst/doc/treeAnnotation.html
@@ -193,13 +180,15 @@ attributes(SiteTree_gr)$group <- factor(x = attributes(SiteTree_gr)$group,
 my_cols <- brewer.pal(n = 4, name = "Set1")
 names(my_cols) <- levels(attributes(SiteTree_gr)$group)
 scales::show_col(my_cols); my_cols
+my_cols[1] <- "#000000" # assign black to basal 
+scales::show_col(my_cols); my_cols
 
 tree_pl <- 
     ggtree(tr      = SiteTree_gr, 
            mapping = aes(color = group), 
            layout  = 'circular',
            # set line thikness
-           size = 0.1) +
+           size = 0.15) +
     # adjust coloring of main groups
     scale_color_manual(name = 'Clade',
                        values = my_cols)
@@ -286,11 +275,11 @@ tree_labeled <-
     )
 
 ggsave(plot = tree_labeled,
-       filename = "Output/Phylo_tree_draft8.png", 
+       filename = "Output/Phylo_tree_draft9.png", 
        width = 10, height = 8, scale = 1, units = "cm", dpi = 600)
 
 ggsave(plot = tree_labeled,
-       filename = "Output/Phylo_tree_draft8.pdf", 
+       filename = "Output/Phylo_tree_draft9.pdf", 
        width = 10, height = 8, scale = 1, units = "cm")
 
 # -----------------------------------------------------------------------------
@@ -312,7 +301,7 @@ tree_dt <- merge(x = tree_dt,
 tree_dt[, ES_categ := ifelse(ES_mst.VS <= 0, "neg", "pos")]
 
 # Define variable to control the x coordinates of bars (segments)
-my_factor <- 10
+my_factor <- 10 # multiplicative factor to ES values so that differences get enhanced
 x_base <- max(tree_dt$x) + abs(min(tree_dt$ES_mst.VS, na.rm = TRUE))*my_factor + 2
 
 # Define variable to control the x coordinates of segments & labels
@@ -333,9 +322,9 @@ tree_ES_bars <-
     # Add ES bars
     geom_rect(data = tree_dt,
               aes(xmin = x_base,
-                  ymin = y - 0.5,
+                  ymin = y - 0.53,
                   xmax = x_base + ES_mst.VS*my_factor,
-                  ymax = y + 0.5,
+                  ymax = y + 0.53,
                   fill = ES_categ),
               # no borders
               color = NA) +
@@ -377,7 +366,7 @@ tree_ES_bars <-
         # and position it in the bottom-right plot area.
         legend.position = c(1.2, 0.04),
         legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
-        legend.key = element_rect(size = 1, color = 'white'),
+        # legend.key = element_rect(size = 1, color = 'white'),
         # Set height of legend items (keys).
         legend.key.height = unit(3, "mm"),
         # Set margin around entire plot.
@@ -385,11 +374,11 @@ tree_ES_bars <-
     )
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft5.png", 
+       filename = "Output/Phylo_tree_ES_bars_draft7.png", 
        width = 10, height = 8, scale = 1, units = "cm", dpi = 600)
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft5.pdf", 
+       filename = "Output/Phylo_tree_ES_bars_draft7.pdf", 
        width = 10, height = 8, scale = 1, units = "cm")
 
 # =============================================================================

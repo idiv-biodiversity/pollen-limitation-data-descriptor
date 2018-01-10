@@ -13,26 +13,29 @@ sapply(.myPackages, require, character.only=TRUE)
 # =============================================================================
 # Read & prepare data
 # =============================================================================
-# read latest dataset (prepared by Joanne)
-PL.all.dt <- fread("Data/PL_ANALYSIS_02_10_2017.csv", colClasses = "character")
+# Read latest aggregated dataset with master ES values
+ES_all_dt <- fread("Data/MasterES_aggreg_pop.csv")
+# Get only columns of interest
+ES_dt <- ES_all_dt[!is.na(Species_accepted_names), .(unique_number,
+                                                     lon_decimal_PTL_JMB, 
+                                                     lat_decimal_PTL_JMB, 
+                                                     Species_accepted_names, 
+                                                     ES_mst.VS)]
+str(ES_dt)
+ES_dt[, lon_decimal_PTL_JMB := as.numeric(lon_decimal_PTL_JMB)]
+ES_dt[, lat_decimal_PTL_JMB := as.numeric(lat_decimal_PTL_JMB)]
+# Some routine checking of coordinates values
+range(ES_dt[,lon_decimal_PTL_JMB]) %between% c(-180, 180)
+range(ES_dt[,lat_decimal_PTL_JMB]) %between% c(-90, 90)
 
-# get only columns of interest
-PL.dt <- PL.all.dt[,.(unique_number, lon_decimal_PTL_JMB, lat_decimal_PTL_JMB)]
-PL.dt[, lon_decimal_PTL_JMB := as.numeric(lon_decimal_PTL_JMB)]
-PL.dt[, lat_decimal_PTL_JMB := as.numeric(lat_decimal_PTL_JMB)]
+# Create ES categories
+ES_dt[, ES_categ := ifelse(ES_mst.VS <= 0, "neg", "pos")]
 
-# some routine checking of coordinates values
-range(PL.dt[,lon_decimal_PTL_JMB]) %between% c(-180, 180)
-range(PL.dt[,lat_decimal_PTL_JMB]) %between% c(-90, 90)
+# Get unique pairs of coordinates
+ES_dt_unq <- unique(ES_dt, by = c("lon_decimal_PTL_JMB", "lat_decimal_PTL_JMB"))
 
-# get unique pairs of coordinates
-PL.dt.unq <- unique( PL.dt[,.(lon_decimal_PTL_JMB, 
-                              lat_decimal_PTL_JMB)], 
-                     by = c("lon_decimal_PTL_JMB", 
-                            "lat_decimal_PTL_JMB") )
-
-# transform long-lat of data in Robinson coordinates
-PL.dt.unq[, c("X.prj","Y.prj") := data.table(rgdal::project(xy   = cbind(lon_decimal_PTL_JMB,
+# Transform unprojected long-lat in Robinson coordinates
+ES_dt_unq[, c("X.prj","Y.prj") := data.table(rgdal::project(xy   = cbind(lon_decimal_PTL_JMB,
                                                                          lat_decimal_PTL_JMB),
                                                             proj = "+init=ESRI:54030"))]
 # "+init=ESRI:54030" same as "+proj=robin"
@@ -69,9 +72,13 @@ lbl.X[, Y.prj := ifelse(lat < 0,
                         no = Y.prj + my_nudge[1,2])]
 
 # =============================================================================
-# plot
+# Plot map
 # =============================================================================
-my_map <- 
+
+# -----------------------------------------------------------------------------
+# Prepare simple map
+# -----------------------------------------------------------------------------
+my_base_map <- 
     ggplot() +
     # ___ add graticules projected to Robinson
     geom_path(data = NE_graticules_rob, 
@@ -107,29 +114,135 @@ my_map <-
                  aes(x = long, 
                      y = lat), 
                  colour ="black", 
-                 fill   ="transparent", 
+                 fill   ="transparent", # try also "lightblue" but add a separate polygon as first layer
                  size   = 0.2) +
     # "Regions defined for each Polygons" warning has to do with fortify transformation. Might get deprecated in future!
-    # ___ add the XY points
-    geom_point(data = PL.dt.unq, 
-               aes(x = X.prj, 
-                   y = Y.prj), 
-               size   = 0.7,
-               shape  = 21,   # the shape of the point is a circle
-               colour = "gray30", 
-               bg     = "gray50", # give color for the cricle edge and also for bakground (bg)
-               alpha  = 0.5) + # set opacity level 
     # ___ the default ratio = 1 in coord_fixed ensures that one unit on the x-axis is the same length as one unit on the y-axis
     coord_fixed(ratio = 1) +
     # Remove the background and default gridlines with theme_nothing() from the ggmap package
     # ___ remove the background and default gridlines
-    theme_void() +
-    # ___ set margins
-    theme(plot.margin = unit(c(t=-0.27, r=-0.5, b=-0.38, l=-0.6), unit="cm"))
+    theme_void()
 
-# save to pdf and png file
-ggsave(plot = my_map, filename = "Output/Global_map_draft_08Jan18.pdf", 
-       width = 14, height = 7, units = "cm", scale = 1)
+# -----------------------------------------------------------------------------
+# Color by master ES category
+# -----------------------------------------------------------------------------
+my_map_ES_categ <- my_base_map +
+    # ___ add the XY points
+    geom_point(data = ES_dt_unq, 
+               aes(x = X.prj, 
+                   y = Y.prj,
+                   color = ES_categ), 
+               size   = 0.5,
+               alpha  = 0.7) +
+    # ___ adjust color
+    scale_color_manual(name   = 'Effect size',
+                       breaks = c("neg", "pos"),
+                       values = c("neg" = "#66c2a5",
+                                  "pos" = "#fc8d62"),
+                       labels = c("negative", "positive")) +
+    # Adjust theme components
+    theme(
+        # Set font size & family - affects legend only 
+        # "sans" = "Arial" and is the default on Windows OS; check windowsFonts()
+        text = element_text(size = 8, family = "sans"),
+        # Grab bottom-right (x=1, y=0) legend corner 
+        legend.justification = c(1, 0),
+        # and position it in the bottom-right plot area.
+        legend.position = c(1.05, 0.05),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
+        # Set height of legend items (keys).
+        legend.key.height = unit(3, "mm"),
+        # Set margin around entire plot.
+        plot.margin = unit(c(t = -0.35, r = 1, b = -0.4, l = -0.5), "cm")
+    )
 
-ggsave(plot = my_map, filename = "Output/Global_map_draft_08Jan18.png", 
-       width = 14, height = 7, units = "cm", scale = 1, dpi = 600)
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_5.pdf", 
+       width = 14, height = 7, units = "cm")
+
+# -----------------------------------------------------------------------------
+# Try ES colour gradient
+# -----------------------------------------------------------------------------
+my_map_ES_gradient <- my_base_map +
+    # ___ add the XY points
+    geom_point(data = ES_dt_unq, 
+               aes(x = X.prj, 
+                   y = Y.prj,
+                   color = ES_mst.VS), 
+               size   = 0.5,
+               alpha  = 0.7) +
+    # ___ adjust color
+    scale_colour_gradient2(name   = 'Effect size',
+                           low  = "#66c2a5",
+                           mid  = "#CCCC00",
+                           high = "#fc8d62",
+                           midpoint = 0,
+                           limits   = range(ES_dt_unq$ES_mst.VS)) +
+    # Adjust theme components
+    theme(
+        # Set font size & family - affects legend only 
+        # "sans" = "Arial" and is the default on Windows OS; check windowsFonts()
+        text = element_text(size = 8, family = "sans"),
+        # Grab bottom-right (x=1, y=0) legend corner 
+        legend.justification = c(1, 0),
+        # and position it in the bottom-right plot area.
+        legend.position = c(1.05, 0.05),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
+        # Set height of legend items (keys).
+        legend.key.height = unit(3, "mm"),
+        # Set margin around entire plot.
+        plot.margin = unit(c(t = -0.35, r = 1, b = -0.4, l = -0.5), "cm")
+    )
+
+ggsave(plot = my_map_ES_gradient, filename = "Output/Global_map_ES_gradient_draft_5.pdf", 
+       width = 14, height = 7, units = "cm")
+
+# -----------------------------------------------------------------------------
+# Try ES colour classes
+# -----------------------------------------------------------------------------
+hist(ES_dt_unq$ES_mst.VS)
+quantile(ES_dt_unq$ES_mst.VS)
+
+ES_dt_unq[, ES_cls := cut(x = ES_mst.VS, 
+                          breaks = c(min(ES_mst.VS)-1/10^6, 0, quantile(ES_mst.VS)[2:5]),
+                          dig.lab = 1)]
+str(ES_dt_unq)
+
+# Experiment with color
+library(RColorBrewer)
+my_cols <- rev(brewer.pal(n = 5, name = "Spectral"))
+names(my_cols) <- levels(ES_dt_unq$ES_cls)
+scales::show_col(my_cols); my_cols
+
+# my_cols <- grDevices::colorRampPalette(colors = c("#66c2a5", "#fc8d62"))(5)
+# names(my_cols) <- levels(ES_dt_unq$ES_cls)
+# scales::show_col(my_cols); my_cols
+
+my_map_ES_cls <- my_base_map +
+    # ___ add the XY points
+    geom_point(data = ES_dt_unq, 
+               aes(x = X.prj, 
+                   y = Y.prj,
+                   color = ES_cls), 
+               size   = 0.5,
+               alpha  = 0.7) +
+    # ___ adjust color
+    scale_color_manual(name = 'Effect size',
+                       values = my_cols) +
+    # Adjust theme components
+    theme(
+        # Set font size & family - affects legend only 
+        # "sans" = "Arial" and is the default on Windows OS; check windowsFonts()
+        text = element_text(size = 8, family = "sans"),
+        # Grab bottom-right (x=1, y=0) legend corner 
+        legend.justification = c(1, 0),
+        # and position it in the bottom-right plot area.
+        legend.position = c(1.05, 0.05),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
+        # Set height of legend items (keys).
+        legend.key.height = unit(3, "mm"),
+        # Set margin around entire plot.
+        plot.margin = unit(c(t = -0.35, r = 1, b = -0.4, l = -0.5), "cm")
+    )
+
+ggsave(plot = my_map_ES_cls, filename = "Output/Global_map_ES_cls_draft_6.pdf", 
+       width = 14, height = 7, units = "cm")

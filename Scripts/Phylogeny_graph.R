@@ -2,6 +2,8 @@
 ## Phylogeny tree graph for pollen limitation dataset
 ###############################################################################
 
+# Load packages
+
 # For general data manipulation & visualization
 library(readxl)
 library(data.table)
@@ -142,6 +144,10 @@ SiteTree <- ape::drop.tip(phy = tree,
 # then no need of using pez::congeneric.merge(); If needed, fallow:
 # https://gist.github.com/valentinitnelav/4cfe294b27c66276f28b2377a158813c#file-congeneric-merge_example-r
 
+# Save updated tree
+write.tree(SiteTree, file = "Output/SiteTree_VS.tree")
+write.nexus(SiteTree, file = "Output/SiteTree_VS_nexus")
+
 # Merge tree tip labels with annotation data from Phylo_info;
 # "tip.label" column name needs to be used exactly as such (with this name).
 # This will be needed for merging annotation data with the tree (with  %<+% operator) using tip.label as key.
@@ -174,16 +180,21 @@ attributes(SiteTree_gr)$group <- factor(x = attributes(SiteTree_gr)$group,
                                                    "Monocot"))
 
 # =============================================================================
-# Plot tree
+# Plot tree with ES bars
 # =============================================================================
 
+# -----------------------------------------------------------------------------
 # Experiment with color
+# -----------------------------------------------------------------------------
 my_cols <- brewer.pal(n = 4, name = "Set1")
 names(my_cols) <- levels(attributes(SiteTree_gr)$group)
 scales::show_col(my_cols); my_cols
 my_cols[1] <- "#000000" # assign black to basal 
 scales::show_col(my_cols); my_cols
 
+# -----------------------------------------------------------------------------
+# Build base plot
+# -----------------------------------------------------------------------------
 tree_pl <- 
     ggtree(tr      = SiteTree_gr, 
            mapping = aes(color = group), 
@@ -194,10 +205,14 @@ tree_pl <-
     scale_color_manual(name = 'Clade',
                        values = my_cols)
 
-# Attaches annotation data to a tree view
-# so that all the variables in the Phylo_info_merged are visible to ggtree
+# -----------------------------------------------------------------------------
+# Construct table of coordinates for segment annotations
+# -----------------------------------------------------------------------------
+# Attaches annotation data to a tree view.
+# Doing so, all variables in the Phylo_info_merged are visible to ggtree
 tree_pl <- tree_pl %<+% Phylo_info_merged 
 
+# Get data from tree view
 tree_dt <- data.table(tree_pl$data)
 # select only the tips and order by coord y
 tree_dt <- tree_dt[isTip == TRUE][order(y)]
@@ -229,70 +244,25 @@ coord_groups[angle %between% c(180, 270), angle_adj := angle_adj - 180]
 # need change of horizontal adjustment argument from 0 to 1.
 coord_groups[, hjust_adj := ifelse(angle %between% c(90, 270), yes = 1, no = 0)]
 
-# if needed, coloring could be binary 
+# if needed, coloring of segments could be binary 
 # coord_groups[, col := ifelse(.I%%2, 0.5, 1)]
 
-# Define variable to control x coordinate of segments & labels
-my_x <- max(tree_dt$x) + 5
-
-tree_labeled <- 
-    tree_pl + 
-    # Add line segments for each group. (geom_cladelabel failed for circular tree)
-    geom_segment(data = coord_groups,
-                 aes(x = my_x, 
-                     y = y1_adj, 
-                     xend = my_x, 
-                     yend = y2_adj),
-                 color = "black",
-                 lineend = "butt",
-                 size = 1,
-                 show.legend = FALSE) +
-    # Add text group labels at the middle of each segment.
-    geom_text(data = coord_groups,
-              aes(x = my_x,
-                  y = y_mid,
-                  angle = angle_adj,
-                  hjust = hjust_adj,
-                  label = order_group),
-              vjust = 0.5, 
-              size  = 1.5,
-              nudge_x = 7, # Offsetting label from its default x coordinate.
-              color = "black",
-              show.legend = FALSE) +
-    # Adjust theme components
-    theme(
-        # Set font size & family - affects legend only 
-        # "sans" = "Arial" and is the default on Windows OS; check windowsFonts()
-        text = element_text(size = 8, family = "sans"),
-        # Grab bottom-right (x=1, y=0) legend corner 
-        legend.justification = c(1,0),
-        # and position it in the bottom-right plot area.
-        legend.position = c(1.145, 0.025),
-        legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
-        # Set height of legend items (keys).
-        legend.key.height = unit(4, "mm"),
-        # Set margin around entire plot.
-        plot.margin = unit(c(t = -0.5, r = 1.3, b = -0.35, l = -0.2), "cm")
-    )
-
-ggsave(plot = tree_labeled,
-       filename = "Output/Phylo_tree_draft9.png", 
-       width = 10, height = 8, scale = 1, units = "cm", dpi = 1000)
-
-ggsave(plot = tree_labeled,
-       filename = "Output/Phylo_tree_draft9.pdf", 
-       width = 10, height = 8, scale = 1, units = "cm")
-
 # -----------------------------------------------------------------------------
-# Plot tree with ES bars
+# Prepare ES values for creating the circular barplot effect
 # -----------------------------------------------------------------------------
-# Read ES (effect size) data
-ES_dt <- fread("Data/PL_ANALYSIS_02_10_2017_MasterES_aggreg_pop_Extractions.csv")
-# Select needed columns
-ES_dt <- ES_dt[!is.na(Species_accepted_names), .(Species_accepted_names, ES_mst.VS)]
+# Read PL table with ES (effect size) data
+ES_all_dt <- fread("Output/PL_masters_for_publication_with_ES_cols.csv",
+                   select = c("Species_accepted_names", "ES_mst.VS"))
+
+# Compares species in data and tree.
+# If “OK” then the tree tips and data match in regards to species names.
+my_sp_ES <- 1:length(unique(ES_all_dt$Species_accepted_names))
+names(my_sp_ES) <- unique(ES_all_dt$Species_accepted_names)
+geiger::name.check(phy = SiteTree_gr, data = my_sp_ES)
+
 # Compute average ES per species
-ES_dt[, ES_mst.VS := as.numeric(ES_mst.VS)]
-ES_dt <- ES_dt[, .(ES_mst.VS = mean(ES_mst.VS)), by = Species_accepted_names]
+ES_dt <- ES_all_dt[, .(ES_mst.VS = mean(ES_mst.VS, na.rm = TRUE)), by = Species_accepted_names]
+
 # Join mean ES values to each species
 tree_dt <- merge(x = tree_dt,
                  y = ES_dt,
@@ -374,12 +344,15 @@ tree_ES_bars <-
     )
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft9.png", 
-       width = 10, height = 8, scale = 1, units = "cm", dpi = 1000)
+       filename = "Output/Phylo_tree_ES_bars_draft10.png", 
+       width = 10, height = 8, units = "cm", dpi = 1000)
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft9.pdf", 
-       width = 10, height = 8, scale = 1, units = "cm")
+       filename = "Output/Phylo_tree_ES_bars_draft10.pdf", 
+       width = 10, height = 8, units = "cm")
+
+# Warning message:
+# Removed 22 rows containing missing values (geom_rect).
 
 # =============================================================================
 # References

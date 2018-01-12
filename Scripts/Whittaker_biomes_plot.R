@@ -2,97 +2,95 @@
 ## Whittaker diagram for biomes and study locations
 ## I used the biome polygons Fig 5.5 p.92 in Ricklefs, 
 ## "The Economy of Nature, Chapter 5, Biological Communities, The biome concept."
-## at: https://www.academia.edu/15092278/Ricklefs_The_Economy_of_Nature_6th_txtbk
-## The polygons were digitized in QGIS - see script Whittaker_biomes_prepare.R for details.
-## Temperature and precipitation data extractions used for plotting were done with Extract_temp_rainfall.R script
 ####################################################################################
 
-library(ggplot2)
-library(broom)
+# install.packages("devtools")
+# devtools::install_github("valentinitnelav/plotbiomes")
+# Check details at https://github.com/valentinitnelav/plotbiomes
+library(plotbiomes)
+# `plotbiomes` package simulates the graph from Figure 5.5 in 
+# Ricklefs, R. E. (2008), The economy of nature. W. H. Freeman and Company. 
+# (Chapter 5, Biological Communities, The biome concept).
 library(data.table)
 
 # =================================================================================
-# read & prepare data
+# Read & prepare data
 # =================================================================================
-# Extractions were done with Extract_temp_rainfall.R script
-extr_dt <- fread("Output/extractions_temp_pp.csv")
+PL_agg_all <- fread("Data/PL_ANALYSIS_02_10_2017_MasterES_aggreg_pop_Extractions.csv")
+# Get only columns of interest
+PL_agg <- PL_agg_all[,.(unique_number, Annual_mean_temp_C, Annual_pp_mm)]
+str(PL_agg)
+PL_agg[, Annual_mean_temp_C := as.numeric(Annual_mean_temp_C)]
+PL_agg[, Annual_pp_mm := as.numeric(Annual_pp_mm)]
 # transform from mm to cm for precipitation
-extr_dt[, Annual_pp_cm := Annual_pp_mm/10]
+PL_agg[, Annual_pp_cm := Annual_pp_mm/10]
 # delete column precipitation in mm
-extr_dt[, Annual_pp_mm := NULL]
-# divide temperature by 10 (original values from CHELSA v1.2 need to be divided by 10 for temp)
-extr_dt[, Annual_mean_temp_C := Annual_mean_temp_C/10] 
+PL_agg[, Annual_pp_mm := NULL]
 
-# get Whittaker biome polygons directly as data frame ready to use in ggplot
-biomes_dt <- fread("Data/Whittaker_biomes.csv")
+# Can tru using unique combinations of precipitation & temperature
+# PL_agg <- unique(PL_agg, by = c("Annual_mean_temp_C", "Annual_pp_cm"))
 
 # =================================================================================
-# plot with ggplot
+# Plot biomes
 # =================================================================================
 
-# Set values from Biome column of biomes_dt in desired order using a vector
-# This is convenient, because trickles down to the lenged of the graph
-my_biomes <- c("Tundra",
-               "Boreal forest",
-               "Temperate seasonal forest",
-               "Temperate rain forest",
-               "Tropical rain forest",
-               "Tropical seasonal forest/savanna",
-               "Subtropical desert",
-               "Temperate grassland/desert",
-               "Woodland/shrubland")
-
-set.seed(1) # for jittering each time in the same way
-biomes_plot <- ggplot() + 
-    # add polygons
-    geom_polygon(data = biomes_dt,
-                 aes(x      = temp_C,
+biomes_plot <- ggplot() +
+    # Add whittaker biomes layer
+    geom_polygon(data = plotbiomes::Whittaker_biomes,
+                 aes(x      = temp_c,
                      y      = precp_cm,
-                     fill   = Biome,
-                     group  = Biome),
-                 colour = "gray98", # for polygon border
-                 size   = 0.5) +    # this is the thikness of the line separating the polygons
-    # adjust the coloring of the polygons (biomes)
-    # colors and labels correspond to Fig 5.5, p92, Ch5 from  Ricklefs The Economy of Nature 6th txtbk
-    # at: https://www.academia.edu/15092278/Ricklefs_The_Economy_of_Nature_6th_txtbk
-    scale_fill_manual(name   = "Biomes", # this will appear as the name of the legend as well
-                      breaks = my_biomes,
-                      labels = my_biomes,
-                      values = c("Tundra"                           = "#c2e1dd",
-                                 "Boreal forest"                    = "#a5c890",
-                                 "Temperate seasonal forest"        = "#97b669",
-                                 "Temperate rain forest"            = "#75a95e",
-                                 "Tropical rain forest"             = "#317a21",
-                                 "Tropical seasonal forest/savanna" = "#a09700",
-                                 "Subtropical desert"               = "#dcbb50",
-                                 "Temperate grassland/desert"       = "#fdd67a",
-                                 "Woodland/shrubland"               = "#d26e3f")) +
-    # add unique combinations of precipitation & temperature
-    geom_point(data = extr_dt, 
-               aes(x      = Annual_mean_temp_C, 
-                   y      = Annual_pp_cm,
+                     fill   = biome,
+                     group  = biome_id),
+                 # adjust polygon border
+                 colour = "gray98",
+                 size   = 0.5) +
+    # fill the polygons with predefined colors
+    scale_fill_manual(name   = "Biomes",
+                      breaks = names(plotbiomes::Ricklefs_colors),
+                      labels = names(plotbiomes::Ricklefs_colors),
+                      values = plotbiomes::Ricklefs_colors) +
+    # Add unique combinations of precipitation & temperature
+    geom_point(data = PL_agg, 
+               aes(x = Annual_mean_temp_C, 
+                   y = Annual_pp_cm,
                    # text will be ignored in ggplot but will be used for hovering purposes in plotly
-                   # this makes point identification interactive and smooth
-                   text   = paste0('unique_number: ', unique_number)),
+                   # this makes point identification interactive
+                   text = paste0('unique_number: ', unique_number)),
                position = position_jitter(width = 0.15, height = 0),
-               size   = 1.3,
-               shape  = 21,   # the shape of the point is a filled circle
-               # give color for the cricle edge and also for bakground (bg)
-               colour = "Blue 4", bg = "Deep Sky Blue 4", 
-               alpha  = 1) + # set opacity level 
+               size   = 0.4,
+               shape  = 1,
+               colour = "dodgerblue4",
+               alpha  = 0.6) + # set opacity level 
+    # set range on OX axes and adjust the distance (gap) from OY axes
+    scale_x_continuous(expand = c(0.02, 0)) +
+    # set range on OY axes and adjust the distance (gap) from OX axes
+    scale_y_continuous(limits = c(-5, round(max(PL_agg$Annual_pp_cm, na.rm = TRUE))+10), 
+                       expand = c(0, 0)) +
     # overwrite axis titles
     labs(x = "Mean annual temperature (°C)",
-         y = "Mean annual precipitation (cm)") +  
-    # set range on OY axes and adjust the distance (gap) from OX axes
-    scale_y_continuous(limits = c(-5, round(max(extr_dt$Annual_pp_cm, na.rm = TRUE))+10), 
-                       expand = c(0, 0)) +
+         y = "Mean annual precipitation (cm)") + 
     # set the general ggplot theme
     theme_bw() +
     # adjust legend position
-    theme(legend.justification = c(0, 1),     # set the upper left corner of the legend box
-          legend.position = c(0.01, 0.99),     # adjust the position of the corner as relative to axis
-          # panel.grid.major = element_blank(), # eliminate major grids
-          panel.grid.minor = element_blank()) # eliminate minor grids
+    theme(
+        panel.grid.major = element_line(size = 0.3, 
+                                        linetype = "longdash"),
+        panel.grid.minor = element_blank(), # eliminate minor grids,
+        # set font family for all text within the plot ("sans" should work as "Arial")
+        # note that this can be overridden with other adjustment functions below
+        text = element_text(family = "sans", size = 8),
+        legend.justification = c(0, 1),  # set the upper left corner of the legend box
+        legend.position = c(0.01, 0.99), # adjust the position of the corner as relative to axis
+        # Set height of legend items (keys).
+        legend.key.height = unit(3, "mm"),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
+        # set margins around entire plot ( https://goo.gl/zdgLMt )
+        plot.margin = unit(c(t = 0.4, 
+                             r = 1.1, 
+                             b = 0, 
+                             l = 0.1), 
+                           "mm")
+    )
 
 set.seed(1) # for jittering each time in the same way
 biomes_plot
@@ -102,100 +100,15 @@ biomes_plot
 # =================================================================================
 set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_5nov17.pdf"), 
-       width    = 8.5, 
-       height   = 7.5, 
-       units    = "cm",
-       scale    = 2)
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_1.pdf"), 
+       width    = 9, 
+       height   = 7, 
+       units    = "cm")
 
 set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_5nov17.png"),
-       width    = 8.5, 
-       height   = 7.5, 
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_1.png"),
+       width    = 9, 
+       height   = 7, 
        units    = "cm",
-       scale    = 2,
-       dpi      = 600)
-
-# =================================================================================
-# Diagnostics & check for outliers
-# =================================================================================
-library(sp)
-# library(rnaturalearth)
-library(mapview)
-library(rgdal)
-require(plotly)
-
-# ---------------------------------------------------------------------------------
-# Detect those points outside of graph
-# ---------------------------------------------------------------------------------
-# A) make interactive plot with plotly from ggplot graph
-# use the hover property to identify points
-# Warning - will not catch overlapping points if they are not jittered
-# and when they are jittered it reports jittered coordinates from the graph 
-# and not the original ones from the data table.
-set.seed(1) # for jittering each time in the same way
-ggplotly(biomes_plot)
-
-# B) Use a spatial overlay tool
-PointsSP <- SpatialPoints(coords = extr_dt[!is.na(Annual_pp_cm), 
-                                           c("Annual_mean_temp_C", 
-                                             "Annual_pp_cm")])
-
-biomes_polyg <- rgdal::readOGR(dsn    = "Whittaker biomes graph - digitize", 
-                               layer  = "Whittaker_biomes")
-
-plot(biomes_polyg); points(PointsSP)
-
-my.over <- sp::over(PointsSP, biomes_polyg)
-outside <- extr_dt[!is.na(Annual_pp_cm),][is.na(my.over$Biome),]
-outside.unq <- unique(outside, by = c("Annual_pp_cm","Annual_mean_temp_C"))
-# setorder(outside.unq, Annual_mean_temp_C, Annual_pp_cm)
-write.csv(outside.unq, "Output/Outliers/outside_unque.csv")
-write.csv(outside, "Output/Outliers/outside_with_duplicates.csv")
-
-# check on global map those locations
-outside.WGS84 <- SpatialPointsDataFrame(coords      = outside[, c("lon_decimal_PTL_JMB", 
-                                                                  "lat_decimal_PTL_JMB")],
-                                        data        = outside,
-                                        proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-
-# download countries from Natural Earth
-# spdf_world <- ne_download(scale = 110, type = 'countries')
-# outside.map <- mapview(spdf_world, 
-#                        alpha.regions = 0.1)
-
-mapviewOptions(basemaps = c("Esri.WorldImagery",
-                            "OpenTopoMap",
-                            "Esri.WorldShadedRelief",
-                            "CartoDB.Positron"))
-outside.map <-  mapview(outside.WGS84, color ="red", cex = 15)
-outside.map
-# save as html
-mapshot(outside.map, url = "outside_map.html")
-
-# ---------------------------------------------------------------------------------
-# why aren't points in tundra biome ?
-# ---------------------------------------------------------------------------------
-# read latest dataset from Joanne
-myDT <- fread("Data/PL_ANALYSIS_02_10_2017.csv", colClasses = "character")
-myDT.sbs <- myDT[Community_Type_Author %like% "tundra",
-                 .(unique_number,
-                   Community_Type_Author)]
-tundra.dt <- merge(myDT.sbs, extr_dt,
-                   by = "unique_number")
-str(tundra.dt)
-
-write.csv(tundra.dt, file = "Output/tundra_pts/tundra_points.csv", row.names = FALSE)
-
-tundra.sp <- SpatialPointsDataFrame(coords      = tundra.dt[, c("lon_decimal_PTL_JMB", 
-                                                              "lat_decimal_PTL_JMB")],
-                                    data        = tundra.dt,
-                                    proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-tundra.points.map <- mapview(tundra.sp, color ="red", cex = 15)
-tundra.points.map
-# save as html
-mapshot(tundra.points.map, url = "tundra_points_map.html")
-
-# write shapefile to HDD to also check in QGIS/ArcMap
-rgdal::writeOGR(obj=tundra.sp, dsn="Output/tundra_pts", layer="tundra_pts", driver="ESRI Shapefile")
+       dpi      = 1000)

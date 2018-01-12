@@ -2,7 +2,7 @@
 ## Script for publication frequencies graph:
 ## "Figure 1. Distribution of year of publication for studies measuring pollen 
 ## limitation of plant reproduction included in the GloPL data base."
-## title extracted from draft PLDataPaper7_6_2017_GAG_JHB_WD_jcv.docx
+## Title extracted from draft PLDataPaper7_6_2017_GAG_JHB_WD_jcv.docx
 ################################################################################
 
 library(data.table)
@@ -13,29 +13,39 @@ library(scales)
 # =============================================================================
 # Read & prepare data
 # =============================================================================
-# Read latest dataset
-PL_all <- fread("Data/PL_ANALYSIS_02_10_2017.csv", colClasses = "character")
+# Read latest aggregated dataset with master ES values
+pl_all_dt <- fread("Data/PL_masters_for publication.csv", colClasses = "character")
 
-# Get only columns of interest
-PL <- PL_all[,.(Year, Author, unique_number, unique_study_number)]
-# Note: what is unique_study_number_TK vs. unique_study_number? 
-# see the Excel file PL_masters_02_10_2017.xlsx
+# Get only columns of interest & remove any empty rows
+pl_dt <- pl_all_dt[unique_number != "", .(Year, unique_number, unique_study_number, Species_accepted_names)]
+
+# Check some stats
+nrow(pl_dt)
+length(unique(pl_dt$unique_number)) # same as pl_dt[, uniqueN(unique_number)]
+length(unique(pl_dt$unique_study_number)) 
+length(unique(pl_dt$Species_accepted_names))
 
 # There are character values for variable Year
-unique(PL$Year)
+unique(pl_dt$Year)
 # replace "2003b" with "2003" so to avoid transformation to NA when applying as.numeric
-PL[Year == "2003b", Year := "2003"]
-PL[, Year := as.numeric(Year)]
+pl_dt[Year == "2003b", Year := "2003"]
+pl_dt[, Year := as.numeric(Year)]
+
 # check which records got NA for variable Year:
-PL[is.na(Year)]
+pl_dt[is.na(Year)]
+str(pl_dt)
 
 # Aggregate
-PL_aggreg <- PL[!is.na(Year), # consider only records that have year information
-                .(N_publications = uniqueN(unique_study_number),
-                  N_studies = uniqueN(unique_number)), # same as = .N here (if a study is a row)
-                by = Year]
-PL_aggreg <- PL_aggreg[order(Year)]
-PL_aggreg[, N_cumul_studies := cumsum(N_studies)]
+data_4graph <- pl_dt[!is.na(Year), # consider only records that have year information
+                     .(N_publications = uniqueN(unique_study_number),
+                       N_studies = uniqueN(unique_number)), # same as = .N here (if a study is a row)
+                     by = Year]
+data_4graph <- data_4graph[order(Year)]
+data_4graph[, N_cumul_studies := cumsum(N_studies)]
+
+# Note that summing up N_publications will give less than pl_dt[, uniqueN(unique_number)] 
+# because publications without year were removed
+write.csv(data_4graph, "Output/table_for_publication_freq_graph_ok.csv", row.names = FALSE)
 
 # =============================================================================
 # Plot
@@ -45,14 +55,14 @@ PL_aggreg[, N_cumul_studies := cumsum(N_studies)]
 my_factor <- 0.02
 # it should be in the range of the ratio of max value on left OY 
 # divided by max values of the right OY (2nd axis)
-max(PL_aggreg$N_publications)/max(PL_aggreg$N_cumul_studies)
+max(data_4graph$N_publications)/max(data_4graph$N_cumul_studies)
 
 # Experiment with color
 mypal = ggsci::pal_npg("nrc", alpha = 1)(2)
 scales::show_col(mypal); mypal
 
 my_plot <- 
-    ggplot(data = PL_aggreg, 
+    ggplot(data = data_4graph, 
            aes(x = Year)) +
     geom_bar(aes(y = N_publications), 
              stat = "identity",
@@ -60,6 +70,9 @@ my_plot <-
     geom_line(aes(y = N_cumul_studies * my_factor),
               size = 1,
               color = "#E64B35FF") +
+    # set range on OX axes and adjust the distance (gap) from OY axes
+    scale_x_continuous(expand = c(0.025, 0)) +
+    # set range on OY axes and adjust the distance (gap) from OX axes
     scale_y_continuous(sec.axis = sec_axis(trans = ~ . / my_factor, 
                                            name = "Cumulative number of \n pollen limitation studies"),
                        limits = c(0, 75),
@@ -101,7 +114,11 @@ my_plot
 # save graph
 ggsave(plot = my_plot,
        filename = "Output/Publication_freq.pdf", 
-       width = 9, height = 5.5, scale = 1, units = "cm")
+       width = 9, height = 5.5, units = "cm")
+
+ggsave(plot = my_plot,
+       filename = "Output/Publication_freq.png", 
+       width = 9, height = 5.5, units = "cm", dpi = 1000)
 
 # =============================================================================
 # References

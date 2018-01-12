@@ -139,7 +139,8 @@ SiteTree <- ape::drop.tip(phy = tree,
                           tip = c("Physocarpus_amurensis",
                                   "Silene_stockenii"))
 # (I think) since there are no species that need to be added to the tree, 
-# then no need of using pez::congeneric.merge()
+# then no need of using pez::congeneric.merge(); If needed, fallow:
+# https://gist.github.com/valentinitnelav/4cfe294b27c66276f28b2377a158813c#file-congeneric-merge_example-r
 
 # Merge tree tip labels with annotation data from Phylo_info;
 # "tip.label" column name needs to be used exactly as such (with this name).
@@ -276,7 +277,7 @@ tree_labeled <-
 
 ggsave(plot = tree_labeled,
        filename = "Output/Phylo_tree_draft9.png", 
-       width = 10, height = 8, scale = 1, units = "cm", dpi = 600)
+       width = 10, height = 8, scale = 1, units = "cm", dpi = 1000)
 
 ggsave(plot = tree_labeled,
        filename = "Output/Phylo_tree_draft9.pdf", 
@@ -286,13 +287,11 @@ ggsave(plot = tree_labeled,
 # Plot tree with ES bars
 # -----------------------------------------------------------------------------
 # Read ES (effect size) data
-# MasterES_aggreg_pop.csv was obtained by applying the aggregation code on PL_ANALYSIS_02_10_2017.csv
-# This file is originallly located in the folder
-# C:\Dropbox (iDiv)\_iDiv\Projects\pollen_limitation\Extract\Output
-ES_dt <- fread("Data/MasterES_aggreg_pop.csv")
+ES_dt <- fread("Data/PL_ANALYSIS_02_10_2017_MasterES_aggreg_pop_Extractions.csv")
 # Select needed columns
 ES_dt <- ES_dt[!is.na(Species_accepted_names), .(Species_accepted_names, ES_mst.VS)]
 # Compute average ES per species
+ES_dt[, ES_mst.VS := as.numeric(ES_mst.VS)]
 ES_dt <- ES_dt[, .(ES_mst.VS = mean(ES_mst.VS)), by = Species_accepted_names]
 # Join mean ES values to each species
 tree_dt <- merge(x = tree_dt,
@@ -375,11 +374,11 @@ tree_ES_bars <-
     )
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft8.png", 
-       width = 10, height = 8, scale = 1, units = "cm", dpi = 600)
+       filename = "Output/Phylo_tree_ES_bars_draft9.png", 
+       width = 10, height = 8, scale = 1, units = "cm", dpi = 1000)
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft8.pdf", 
+       filename = "Output/Phylo_tree_ES_bars_draft9.pdf", 
        width = 10, height = 8, scale = 1, units = "cm")
 
 # =============================================================================

@@ -74,7 +74,7 @@ my_plot <-
     scale_x_continuous(expand = c(0.025, 0)) +
     # set range on OY axes and adjust the distance (gap) from OX axes
     scale_y_continuous(sec.axis = sec_axis(trans = ~ . / my_factor, 
-                                           name = "Cumulative number of \n pollen limitation studies"),
+                                           name = "Cumulative number of \n pollen limitation cases"),
                        limits = c(0, 75),
                        expand = c(0, 0)) +
     # set axis labels
@@ -113,11 +113,11 @@ my_plot
 
 # save graph
 ggsave(plot = my_plot,
-       filename = "Output/Publication_freq.pdf", 
+       filename = "Output/Publication_freq_draft_3.pdf", 
        width = 9, height = 5.5, units = "cm")
 
 ggsave(plot = my_plot,
-       filename = "Output/Publication_freq.png", 
+       filename = "Output/Publication_freq_draft_3.png", 
        width = 9, height = 5.5, units = "cm", dpi = 1000)
 
 # =============================================================================

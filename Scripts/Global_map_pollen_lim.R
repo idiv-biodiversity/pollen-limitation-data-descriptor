@@ -14,7 +14,7 @@ sapply(.myPackages, require, character.only=TRUE)
 # Read & prepare data
 # =============================================================================
 # Read latest aggregated dataset with master ES values
-ES_all_dt <- fread("Data/MasterES_aggreg_pop.csv")
+ES_all_dt <- fread("Data/PL_ANALYSIS_02_10_2017_MasterES_aggreg_pop_Extractions.csv")
 # Get only columns of interest
 ES_dt <- ES_all_dt[!is.na(Species_accepted_names), .(unique_number,
                                                      lon_decimal_PTL_JMB, 
@@ -171,6 +171,9 @@ my_map_ES_categ <- my_base_map +
 
 ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_5.pdf", 
        width = 14, height = 7, units = "cm")
+
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_5.png", 
+       width = 14, height = 7, units = "cm", dpi = 1000)
 
 # -----------------------------------------------------------------------------
 # Try ES colour gradient

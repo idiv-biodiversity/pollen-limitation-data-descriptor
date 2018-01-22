@@ -3,42 +3,57 @@
 ###############################################################################
 
 # List of packages for session (add here any new desired packages)
-.myPackages = c("rgdal", "sp", "data.table", "ggplot2", "ggmap", "ggalt")
+.myPackages = c("rgdal", "sp", "data.table", "ggplot2", "mapview" ,"gplots")
 # Install CRAN packages (if not already installed)
 .inst <- .myPackages %in% installed.packages()
 if(length(.myPackages[!.inst]) > 0) install.packages(.myPackages[!.inst])
 # Load packages into session 
-sapply(.myPackages, require, character.only=TRUE)
+sapply(.myPackages, require, character.only = TRUE)
 
 # =============================================================================
 # Read & prepare data
 # =============================================================================
-# Read latest aggregated dataset with master ES values
-ES_all_dt <- fread("Data/PL_ANALYSIS_02_10_2017_MasterES_aggreg_pop_Extractions.csv")
+# Read data - is the output of Compute_ES.R script
+ES_all_dt <- fread("Output/PL_masters_for_publication_with_ES_cols.csv", colClasses = "character")
 # Get only columns of interest
-ES_dt <- ES_all_dt[!is.na(Species_accepted_names), .(unique_number,
-                                                     lon_decimal_PTL_JMB, 
-                                                     lat_decimal_PTL_JMB, 
-                                                     Species_accepted_names, 
-                                                     ES_mst.VS)]
+ES_dt <- ES_all_dt[, .(unique_number,
+                       lon_decemial_unpinned, 
+                       lat_decimal_unpinned, 
+                       Species_accepted_names, 
+                       ES_mst.VS)]
 str(ES_dt)
-ES_dt[, lon_decimal_PTL_JMB := as.numeric(lon_decimal_PTL_JMB)]
-ES_dt[, lat_decimal_PTL_JMB := as.numeric(lat_decimal_PTL_JMB)]
-# Some routine checking of coordinates values
-range(ES_dt[,lon_decimal_PTL_JMB]) %between% c(-180, 180)
-range(ES_dt[,lat_decimal_PTL_JMB]) %between% c(-90, 90)
 
-# Create ES categories
+# Transform longitude to numeric
+ES_dt[, lon := as.numeric(lon_decemial_unpinned)]
+ES_dt[is.na(lon)] # the minus sign is not a ream minus sign
+ES_dt[unique_number == "2219", lon := -7.317197]
+
+# Transform latitude to numeric
+ES_dt[, lat := as.numeric(lat_decimal_unpinned)]
+
+# Some routine checking of coordinates values
+range(ES_dt[,lon]) %between% c(-180, 180)
+range(ES_dt[,lat]) %between% c(-90, 90)
+
+# Create ES categories (this was not used for coloring finally)
+ES_dt[, ES_mst.VS := as.numeric(ES_mst.VS)]
 ES_dt[, ES_categ := ifelse(ES_mst.VS <= 0, "neg", "pos")]
 
 # Get unique pairs of coordinates
-ES_dt_unq <- unique(ES_dt, by = c("lon_decimal_PTL_JMB", "lat_decimal_PTL_JMB"))
+# ES_dt_unq <- unique(ES_dt, by = c("lon", "lat"))
 
 # Transform unprojected long-lat in Robinson coordinates
-ES_dt_unq[, c("X.prj","Y.prj") := data.table(rgdal::project(xy   = cbind(lon_decimal_PTL_JMB,
-                                                                         lat_decimal_PTL_JMB),
-                                                            proj = "+init=ESRI:54030"))]
+ES_dt[, c("X.prj","Y.prj") := data.table(rgdal::project(xy   = cbind(lon, lat),
+                                                        proj = "+init=ESRI:54030"))]
 # "+init=ESRI:54030" same as "+proj=robin"
+
+# Check points with interactive map
+points_WGS84 <- sp::SpatialPointsDataFrame(coords      = ES_dt[,.(lon,lat)], # order matters
+                                           data        = ES_dt[,.(unique_number, ES_categ)], 
+                                           proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+my_html_map <- mapview(points_WGS84, zcol = "ES_categ")
+# save as html
+# mapshot(my_html_map, url = "Global_map_ES_categ_html.html")
 
 # =============================================================================
 # Load & prepare NaturalEarth shapefiles
@@ -141,7 +156,7 @@ my_base_map <-
 # -----------------------------------------------------------------------------
 my_map_ES_categ <- my_base_map +
     # ___ add the XY points
-    geom_point(data = ES_dt_unq, 
+    geom_point(data = ES_dt, 
                aes(x = X.prj, 
                    y = Y.prj,
                    color = ES_categ), 
@@ -169,10 +184,10 @@ my_map_ES_categ <- my_base_map +
         plot.margin = unit(c(t = 0, r = 0.8, b = 0, l = -0.5), "cm")
     )
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_5.pdf", 
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_7.pdf", 
        width = 14, height = 7, units = "cm")
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_5.png", 
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_7.png", 
        width = 14, height = 7, units = "cm", dpi = 1000)
 
 # -----------------------------------------------------------------------------

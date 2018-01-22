@@ -121,8 +121,8 @@ my_base_map <-
                  aes(x     = long,
                      y     = lat, 
                      group = group), 
-                 colour = "grey50", 
-                 fill   = "gray80", 
+                 colour = "grey60", # country border color
+                 fill   = "gray90", # country fill color
                  size   = 0.2) +
     # ___ add graticule labels - latitude and longitude
     geom_text(data = lbl.Y, 
@@ -152,22 +152,17 @@ my_base_map <-
     theme_void()
 
 # -----------------------------------------------------------------------------
-# Color by master ES category
+# Add study locations (points)
 # -----------------------------------------------------------------------------
 my_map_ES_categ <- my_base_map +
     # ___ add the XY points
     geom_point(data = ES_dt, 
                aes(x = X.prj, 
-                   y = Y.prj,
-                   color = ES_categ), 
-               size   = 0.5,
-               alpha  = 0.7) +
-    # ___ adjust color
-    scale_color_manual(name   = 'Effect size',
-                       breaks = c("neg", "pos"),
-                       values = c("neg" = "#66c2a5",
-                                  "pos" = "#fc8d62"),
-                       labels = c("negative", "positive")) +
+                   y = Y.prj),
+               color = "dodgerblue4",
+               size  = 0.5,
+               shape = 1,
+               alpha = 1) +
     # Adjust theme components
     theme(
         # Set font size & family - affects legend only 
@@ -184,8 +179,8 @@ my_map_ES_categ <- my_base_map +
         plot.margin = unit(c(t = 0, r = 0.8, b = 0, l = -0.5), "cm")
     )
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_7.pdf", 
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_9.pdf", 
        width = 14, height = 7, units = "cm")
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_7.png", 
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_9.png", 
        width = 14, height = 7, units = "cm", dpi = 1000)

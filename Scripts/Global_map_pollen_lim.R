@@ -179,8 +179,8 @@ my_map_ES_categ <- my_base_map +
         plot.margin = unit(c(t = 0, r = 0.8, b = 0, l = -0.5), "cm")
     )
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_9.pdf", 
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_9.pdf", 
        width = 14, height = 7, units = "cm")
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_ES_categ_draft_9.png", 
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_9.png", 
        width = 14, height = 7, units = "cm", dpi = 1000)

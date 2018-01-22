@@ -1,39 +1,35 @@
 ####################################################################################
-## Whittaker diagram for biomes and study locations
-## I used the biome polygons Fig 5.5 p.92 in Ricklefs, 
-## "The Economy of Nature, Chapter 5, Biological Communities, The biome concept."
+## Whittaker diagram for biomes and study locations.
 ####################################################################################
 
 # install.packages("devtools")
 # devtools::install_github("valentinitnelav/plotbiomes")
 # Check details at https://github.com/valentinitnelav/plotbiomes
-library(plotbiomes)
 # `plotbiomes` package simulates the graph from Figure 5.5 in 
 # Ricklefs, R. E. (2008), The economy of nature. W. H. Freeman and Company. 
 # (Chapter 5, Biological Communities, The biome concept).
+library(plotbiomes)
 library(data.table)
 
 # =================================================================================
 # Read & prepare data
 # =================================================================================
-PL_agg_all <- fread("Data/PL_ANALYSIS_02_10_2017_MasterES_aggreg_pop_Extractions.csv")
-# Get only columns of interest
-PL_agg <- PL_agg_all[,.(unique_number, Annual_mean_temp_C, Annual_pp_mm)]
-str(PL_agg)
-PL_agg[, Annual_mean_temp_C := as.numeric(Annual_mean_temp_C)]
-PL_agg[, Annual_pp_mm := as.numeric(Annual_pp_mm)]
-# transform from mm to cm for precipitation
-PL_agg[, Annual_pp_cm := Annual_pp_mm/10]
-# delete column precipitation in mm
-PL_agg[, Annual_pp_mm := NULL]
+my_dt <- fread("Output/extractions_temp_pp.csv")
+str(my_dt) # unique_number should be character
 
-# Can tru using unique combinations of precipitation & temperature
-# PL_agg <- unique(PL_agg, by = c("Annual_mean_temp_C", "Annual_pp_cm"))
+# Temperature needs to be divided by 10
+my_dt[, Annual_mean_temp_C := Annual_mean_temp_C/10]
+# Transform from mm to cm for precipitation
+my_dt[, Annual_pp_cm := Annual_pp_mm/10]
+# Delete column precipitation in mm
+my_dt[, Annual_pp_mm := NULL]
+
+# Can try using unique combinations of precipitation & temperature
+# my_dt <- unique(my_dt, by = c("Annual_mean_temp_C", "Annual_pp_cm"))
 
 # =================================================================================
 # Plot biomes
 # =================================================================================
-
 biomes_plot <- ggplot() +
     # Add whittaker biomes layer
     geom_polygon(data = plotbiomes::Whittaker_biomes,
@@ -50,21 +46,21 @@ biomes_plot <- ggplot() +
                       labels = names(plotbiomes::Ricklefs_colors),
                       values = plotbiomes::Ricklefs_colors) +
     # Add unique combinations of precipitation & temperature
-    geom_point(data = PL_agg, 
+    geom_point(data = my_dt, 
                aes(x = Annual_mean_temp_C, 
                    y = Annual_pp_cm,
                    # text will be ignored in ggplot but will be used for hovering purposes in plotly
                    # this makes point identification interactive
                    text = paste0('unique_number: ', unique_number)),
-               position = position_jitter(width = 0.15, height = 0),
+               # position = position_jitter(width = 0.1, height = 0.1),
                size   = 0.4,
                shape  = 1,
                colour = "dodgerblue4",
-               alpha  = 0.6) + # set opacity level 
+               alpha  = 1) + # set opacity level 
     # set range on OX axes and adjust the distance (gap) from OY axes
     scale_x_continuous(expand = c(0.02, 0)) +
     # set range on OY axes and adjust the distance (gap) from OX axes
-    scale_y_continuous(limits = c(-5, round(max(PL_agg$Annual_pp_cm, na.rm = TRUE))+10), 
+    scale_y_continuous(limits = c(-5, round(max(my_dt$Annual_pp_cm, na.rm = TRUE))+10), 
                        expand = c(0, 0)) +
     # overwrite axis titles
     labs(x = "Mean annual temperature (°C)",
@@ -92,22 +88,19 @@ biomes_plot <- ggplot() +
                            "mm")
     )
 
-set.seed(1) # for jittering each time in the same way
-biomes_plot
-
 # =================================================================================
 # Save to pdf and png file
 # =================================================================================
 set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_1.pdf"), 
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_3.pdf"), 
        width    = 9, 
        height   = 7, 
        units    = "cm")
 
 set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_1.png"),
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_3.png"),
        width    = 9, 
        height   = 7, 
        units    = "cm",

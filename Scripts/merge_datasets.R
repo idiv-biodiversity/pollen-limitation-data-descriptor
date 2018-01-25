@@ -6,49 +6,57 @@ library(readxl)
 # =============================================================================
 
 # -------------------------------------
-# Read PL data 
+# Read PL data (all columns as character)
 # -------------------------------------
-# Read first with default settings for guessing column types.
+# Read first from Excel file with default settings for guessing column types.
 # This is helpful because triggers warnings messages pointing to various unexpected values.
 # Is important to check the warnings with warnings() function
-pl_dt <- read_excel(path  = "Data/for_merging/PL_masters_for publication_23_01.xlsx", 
+pl_dt <- read_excel(path  = "Data/for_merging/PL_masters_for publication_25_01.xlsx", 
                     sheet = 1)
 warnings()
-# Spreadsheet cell L2052 had not a proper minus sign for its numeric value. Corrected now directly in the Excel file.
+# Expecting numeric in J2052 / R2052C10: got 'â€“7.317197'
+# This happenes because the value in spreadsheet cell J2052 does not have a proper minus sign.
 # Spreadsheet column C ("Year") is expected to be numeric but has some character values. Keep it character.
-# Check for example cell C2420 with value "2003b". Corrected to 2003 now directly in the Excel file.
+# Check for example cell C2420 with value "2003b".
 
-# Read PL data (all columns as character)
-pl_dt <- read_excel(path  = "Data/for_merging/PL_masters_for publication_23_01.xlsx", 
-                    sheet = 1, col_types = "text")
-setDT(pl_dt)
+# Read PL data (all columns as character).
+# Read the CSV file and not the Excel one. 
+# Seems that readxl::read_excel() has some issues with numeric representation if reading as character.
+# https://github.com/tidyverse/readxl/issues/360
+pl_dt <- fread(file = "Data/for_merging/PL_masters_for publication_25_01.csv", 
+               colClasses = "character")
+# Create a helper idex
 pl_dt[, row_idx_pldata := 1:.N]
 
+# Correct the value with the minus sign issue.
+# Note that indexing in R means one row less because R does not index the header as first row as Excel does.
+pl_dt[2052-1, lon_decemial_unpinned := "-7.317197"]
+
 # -------------------------------------
-# Read PL data with ES
+# Read PL data with ES (all columns as character)
 # -------------------------------------
-ES_dt <- fread("Output/PL_masters_for_publication_with_ES_cols.csv",
+ES_dt <- fread(file = "Output/PL_masters_for_publication_with_ES_cols.csv",
                select = c("unique_number", "ES_mst.VS", "ES_mst_idx.VS", "ES_mst_S.Bo.VS"),
                colClasses = "character")
+# The CSV file is the output of Compute_ES.R script.
 
 # -------------------------------------
 # Read meta_data (all columns as character)
 # -------------------------------------
-meta_dt <- read_excel(path  = "Data/for_merging/Meta_data_24_01.xlsx", 
-                   sheet = "MetaData", col_types = "text")
-setDT(meta_dt)
+meta_dt <- fread(file = "Data/for_merging/Meta_data_24_01.csv", 
+                 colClasses = "character")
 # Delete any quotation symbol from column names
 data.table::setnames(meta_dt, gsub("'", "", names(meta_dt)))
 # Replace spaces with dots in column names
 data.table::setnames(meta_dt, gsub(" ", ".", names(meta_dt)))
+# Create a helper idex
 meta_dt[, row_idx_meta := 1:.N]
 
 # -------------------------------------
 # Read citations data (all columns as character)
 # -------------------------------------
-citations_dt <- read_excel(path  = "Data/for_merging/Citations_24_01C.xlsx", 
-                   sheet = 1, col_types = "text")
-setDT(citations_dt)
+citations_dt <- fread(file = "Data/for_merging/Citations_25_01.csv",
+                      colClasses = "character")
 # Replace spaces with dots in column names
 data.table::setnames(citations_dt, gsub(" ", ".", names(citations_dt)))
 citations_dt[, row_idx_citations := 1:.N]
@@ -80,7 +88,7 @@ merged_dt_1[is.na(row_idx_pldata), unique(unique_study_number)]
 # -------------------------------------
 # Check for artefacts in DOI
 # -------------------------------------
-dois <- sort(merged_dt_1[, unique(DOI_CitationsFile)], na.last = TRUE)
+dois <- sort(merged_dt_1[, unique(DOI_CitationsFile)], na.last = FALSE)
 dois
 # Some DOI values that might be artefacts:
 # "10. 3969 / j. issn. 1004-1524. 2013. 06. 16" 
@@ -95,11 +103,11 @@ dois
 # "10.13388/j_.cnki_.ysajs.2009.03.018"
 # "10.13989/j_.cnki_.0517_-6611"
 # "10.5846_/stxb201305311251"
-# "NA" 
+# "" 
 # NA 
-# Note that there are a few cells with "NA" as character and then some blanks (that become NA). 
-# Convert both to NA:
-merged_dt_1[DOI_CitationsFile == "NA", DOI_CitationsFile := NA]
+# Note that there are some empty cells that were read in as "" (empty character). 
+# Convert them to NA:
+merged_dt_1[DOI_CitationsFile == "", DOI_CitationsFile := NA]
 # Joanne updated all other reported artefacts directly in the Excel file.
 
 # Check for all DOI-s that may contain "?" or "_" characters
@@ -119,7 +127,8 @@ merged_dt_1[DOI_CitationsFile == "10.1016/j.aquabot.2013.12.003_", DOI_Citations
 # -------------------------------------
 # Check mismatches between the old and new year data
 # -------------------------------------
-year_mismatches <- unique(merged_dt_1[Year != Year_CitationsFile, .(unique_study_number, Year, Year_CitationsFile)])
+year_mismatches <- unique(merged_dt_1[Year != Year_CitationsFile, .(unique_study_number, Year, Year_CitationsFile, 
+                                                                    Author, Author_CitationsFile)])
 write.csv(year_mismatches, "output/for_merging/year_mismatches.csv", row.names = FALSE)
 
 # Check for artefacts in column "Year_CitationsFile"
@@ -184,16 +193,18 @@ old_names <- meta_dt$Current.Column.Name
 new_names <- meta_dt$Variable.within.GloPL.database
 
 # Check if old_names can be found in current column names.
-# Display which cannot be found:
+# Display which cannot be found (if any):
 old_names[!(old_names %in% names(merged_dt_2))]
 
-# Careful with versions of year, DOI and author.
-# Subset ony to desired columns
-merged_dt_3 <- merged_dt_2[, c(old_names, 
-                               "DOI_CitationsFile", 
-                               "Author_CitationsFile",
-                               "Year_CitationsFile"), 
-                           with = FALSE]
+# Subset ony to desired columns:
+# Careful with versions of year, DOI and author; add also those from citation files. 
+# For back reference keep unique_number & unique_study_number columns.
+cols2keep <- c("unique_number",
+               "unique_study_number",
+               "Author_CitationsFile",
+               "Year_CitationsFile",
+               "DOI_CitationsFile")
+merged_dt_3 <- merged_dt_2[, c(old_names, cols2keep), with = FALSE]
 
 # Rename according to metadata
 setnames(merged_dt_3, 
@@ -201,7 +212,16 @@ setnames(merged_dt_3,
          new = new_names)
 
 # Sort column names
-setcolorder(merged_dt_3, sort(names(merged_dt_3)))
+setcolorder(merged_dt_3, c(cols2keep, new_names))
 
 # save to csv file
+write.csv(merged_dt_3, "output/for_merging/merged_compare_author_year_DOI.csv", row.names = FALSE)
+
+# Overwrite Author, Year & DOI with final correct versions from citations file.
+merged_dt_3[, ":=" (Author = Author_CitationsFile,
+                    Year = Year_CitationsFile,
+                    DOI = DOI_CitationsFile)]
+merged_dt_3[, c("Author_CitationsFile",
+                "Year_CitationsFile",
+                "DOI_CitationsFile") := NULL]
 write.csv(merged_dt_3, "output/for_merging/merged.csv", row.names = FALSE)

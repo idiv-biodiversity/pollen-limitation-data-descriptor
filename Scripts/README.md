@@ -1,10 +1,14 @@
-# Graphs for Nature Scientific Data
+# Graphs & data preparation for Nature Scientific Data
 
 ## Compute PL ES (Pollen Limitation Effect Sizes)
 See `Compute_ES.R` script.
 
+Computes pollen limitation effect sizes (ES) & variances. Simple means were applied for consistency (weighted means were finally NOT used as they were applicable to only a few cases because almost all authors do not report all sample sizes). Variance formula was adapted from *Koricheva et al., 2013 - Handbook of Meta-Analysis, p 64*
+
 ## Whittaker biomes graph
 See `Whittaker_biomes_plot.R` script and the helper scripts `Extract_temp_rainfall.R`.
+
+Study cases are placed within the Whittaker biomes space.
 
 **Notes**
 
@@ -23,3 +27,6 @@ See `Phylogeny_graph.R` script.
 
 ## Publications/PL cases frequencies graph
 See ` publication_frequencies.R` script.
+
+## Prepare data for upload
+See `merge_datasets.R` script to merge PL data with metadata and citations information. Also does some data cleaning and checking.

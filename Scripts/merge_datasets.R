@@ -136,7 +136,8 @@ year_mismatches <- unique(merged_dt_1[Year != Year_CitationsFile, .(unique_study
                                                                     Author, Author_CitationsFile)])
 write.csv(year_mismatches, "output/for_merging/year_mismatches.csv", row.names = FALSE)
 
-# Check for artefacts in column "Year_CitationsFile"
+# Check for artefacts in column "Year_CitationsFile" 
+# Note that updates in the data file might render this checking obsolete.
 merged_dt_1[, sort(unique(Year_CitationsFile))] 
 # Replace "2003b" with "2003" in column "Year_CitationsFile"
 merged_dt_1[Year_CitationsFile == "2003b", Year_CitationsFile := "2003"]
@@ -208,17 +209,55 @@ cols2keep <- c("unique_number",
                "unique_study_number",
                "Author_CitationsFile",
                "Year_CitationsFile",
-               "DOI_CitationsFile")
-merged_dt_3 <- merged_dt_2[, c(old_names, cols2keep), with = FALSE]
+               "DOI_CitationsFile",
+               "Species_Author")
+# Create a copy and subset
+merged_dt_3 <- copy(merged_dt_2[, c(old_names, cols2keep), with = FALSE])
 
 # Rename according to metadata
 setnames(merged_dt_3, 
          old = old_names, 
          new = new_names)
 
-# Sort column names
+# set column order as given in the metadata file
 setcolorder(merged_dt_3, c(cols2keep, new_names))
 
+# =============================================================================
+# D) Data checking
+# =============================================================================
+check_lst <- sapply( merged_dt_3, function(col)(sort(unique(col), na.last = TRUE)) )
+check_dt <- do.call(qpcR:::cbind.na, check_lst)
+check_dt <- as.data.table(check_dt)
+write.csv(check_dt, "output/for_merging/check_unique_val_per_column.csv", row.names = FALSE)
+# https://stackoverflow.com/a/33622855/5193830
+# sort(unique(check_lst$population))
+# max_length <- max(sapply(check_lst, length))
+# my_fun <- function(x)(length(x) <- max_length)
+# check_lst <- do.call("my_fun", check_lst)
+
+merged_dt_3[Level_of_Supplementation == "inflor", Level_of_Supplementation := "inflorescense"]
+merged_dt_3[Level_of_Supplementation == "plant", Level_of_Supplementation := "whole_plant"]
+sort(unique(merged_dt_3$Level_of_Supplementation))
+
+# Run ANOVA on Level_of_Supplementation with ES values
+pl4anova <- merged_dt_3[,.(Level_of_Supplementation, PL_Effect_Size)]
+pl4anova <- pl4anova[complete.cases(pl4anova)]
+
+pl4anova[, PL_Effect_Size := as.numeric(PL_Effect_Size)]
+pl4anova[, Level_of_Supplementation := as.factor(Level_of_Supplementation)]
+
+hist(pl4anova$PL_Effect_Size)
+
+boxplot(PL_Effect_Size ~ Level_of_Supplementation, data = pl4anova)
+aov.model <- aov(PL_Effect_Size ~ Level_of_Supplementation, data = pl4anova)
+aov.model
+summary(aov.model)
+TukeyHSD(aov.model)
+plot(TukeyHSD(aov.model))
+
+# =============================================================================
+# E) Save results
+# =============================================================================
 # save to csv file
 write.csv(merged_dt_3, "output/for_merging/merged_compare_author_year_DOI.csv", row.names = FALSE)
 

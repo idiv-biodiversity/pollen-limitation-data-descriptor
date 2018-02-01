@@ -15,24 +15,21 @@ source("https://raw.githubusercontent.com/valentinitnelav/helpers/master/R/extra
 # =============================================================================
 # Read & prepare data
 # =============================================================================
-# Read latest dataset from Joanne
-PL_dt <- fread("Data/PL_masters_for publication.csv",
-               select = c("unique_number", 
-                          "lon_decemial_unpinned", 
-                          "lat_decimal_unpinned"),
-               colClasses = "character")
-# remove any empty rows
+# Read PL data
+PL_dt <- fread("Output/GloPL_with_id_ES.csv", 
+               colClasses = "character",
+               na.strings = c("NA","N/A","null", ""),
+               select = c("unique_number", "Longitude", "Latitude"))
+# remove any empty rows (if any)
 PL_dt <- PL_dt[unique_number != ""]
 
 # Transform longitude to numeric
-PL_dt[, lon := as.numeric(lon_decemial_unpinned)]
-PL_dt[is.na(lon)] # the minus sign is not a ream minus sign
-PL_dt[unique_number == "2219", lon := -7.317197]
-PL_dt[, lon_decemial_unpinned := NULL]
+PL_dt[, lon := as.numeric(Longitude)]
+PL_dt[, Longitude := NULL]
 
 # Transform latitude to numeric
-PL_dt[, lat := as.numeric(lat_decimal_unpinned)]
-PL_dt[, lat_decimal_unpinned := NULL]
+PL_dt[, lat := as.numeric(Latitude)]
+PL_dt[, Latitude := NULL]
 
 # Some routine checking of coordinates values
 range(PL_dt[,lon]) %between% c(-180, 180)

@@ -123,7 +123,7 @@ writexl::write_xlsx(my_sp, path = "Output/taxa_to_check_TPL_suggest_VS.xlsx")
 # -----------------------------------------------------------------------------
 # Prepare phylogeny tree for plotting
 # -----------------------------------------------------------------------------
-# Read tree from Tiffany
+# Read tree from Jana (received on Wednesday, January 10, 2018 12:20 AM)
 tree <- read.tree("Data/phylogeny/Aggre.tree_new.tre")
 tree$tip.label[1:5] # check formating of first 5 species names
 
@@ -133,8 +133,8 @@ my_sp <- 1:nrow(Phylo_info)
 names(my_sp) <- Phylo_info$Species_accepted_names
 geiger::name.check(phy = tree, data = my_sp)
 # Or check using setdiff
-# setdiff(SiteTree$tip.label, Phylo_info$Species_accepted_names)
-# setdiff(Phylo_info$Species_accepted_names, SiteTree$tip.label)
+# setdiff(tree$tip.label, Phylo_info$Species_accepted_names)
+# setdiff(Phylo_info$Species_accepted_names, tree$tip.label)
 
 # Remove extra taxa from phylogeny
 SiteTree <- ape::drop.tip(phy = tree, 
@@ -193,7 +193,7 @@ my_cols[1] <- "#000000" # assign black to basal
 scales::show_col(my_cols); my_cols
 
 # -----------------------------------------------------------------------------
-# Build base plot
+# Build base graph tree
 # -----------------------------------------------------------------------------
 tree_pl <- 
     ggtree(tr      = SiteTree_gr, 
@@ -251,8 +251,8 @@ coord_groups[, hjust_adj := ifelse(angle %between% c(90, 270), yes = 1, no = 0)]
 # Prepare ES values for creating the circular barplot effect
 # -----------------------------------------------------------------------------
 # Read PL table with ES (effect size) data
-ES_all_dt <- fread("Output/PL_masters_for_publication_with_ES_cols.csv",
-                   select = c("Species_accepted_names", "ES_mst.VS"))
+ES_all_dt <- fread("Output/GloPL_with_id_ES.csv",
+                   select = c("Species_accepted_names", "PL_Effect_Size"))
 
 # Compares species in data and tree.
 # If “OK” then the tree tips and data match in regards to species names.
@@ -261,30 +261,31 @@ names(my_sp_ES) <- unique(ES_all_dt$Species_accepted_names)
 geiger::name.check(phy = SiteTree_gr, data = my_sp_ES)
 
 # Compute average ES per species
-ES_dt <- ES_all_dt[, .(ES_mst.VS = mean(ES_mst.VS, na.rm = TRUE)), by = Species_accepted_names]
+ES_dt <- ES_all_dt[, .(PL_Effect_Size = mean(as.numeric(PL_Effect_Size), na.rm = TRUE)), 
+                   by = Species_accepted_names]
 
 # Join mean ES values to each species
 tree_dt <- merge(x = tree_dt,
                  y = ES_dt,
                  by.x = "label",
                  by.y = "Species_accepted_names")
-tree_dt[, ES_categ := ifelse(ES_mst.VS <= 0, "neg", "pos")]
+tree_dt[, ES_categ := ifelse(PL_Effect_Size <= 0, "neg", "pos")]
 
 # Define variable to control the x coordinates of bars (segments)
 my_factor <- 10 # multiplicative factor to ES values so that differences get enhanced
-x_base <- max(tree_dt$x) + abs(min(tree_dt$ES_mst.VS, na.rm = TRUE))*my_factor + 2
+x_base <- max(tree_dt$x) + abs(min(tree_dt$PL_Effect_Size, na.rm = TRUE))*my_factor + 2
 
 # Define variable to control the x coordinates of segments & labels
-my_x <- x_base + max(tree_dt$ES_mst.VS, na.rm = TRUE)*my_factor + 5
+my_x <- x_base + max(tree_dt$PL_Effect_Size, na.rm = TRUE)*my_factor + 5
 
 # Plot
 tree_ES_bars <- 
     tree_pl + 
     # Add a background disc to plot ES bars on top of it
     geom_rect(data = tree_dt,
-              aes(xmin = x_base + min(ES_mst.VS, na.rm = TRUE)*my_factor,
+              aes(xmin = x_base + min(PL_Effect_Size, na.rm = TRUE)*my_factor,
                   ymin = 0,
-                  xmax = x_base + max(ES_mst.VS, na.rm = TRUE)*my_factor,
+                  xmax = x_base + max(PL_Effect_Size, na.rm = TRUE)*my_factor,
                   ymax = max(y)+1), # +1 to force complete circle (otherwise a stripe of white remains)
               color = NA, # set NA so to avoid coloring borders
               fill = "#deebf7", # or try "#8da0cb"
@@ -293,7 +294,7 @@ tree_ES_bars <-
     geom_rect(data = tree_dt,
               aes(xmin = x_base,
                   ymin = y - 0.53,
-                  xmax = x_base + ES_mst.VS*my_factor,
+                  xmax = x_base + PL_Effect_Size*my_factor,
                   ymax = y + 0.53,
                   fill = ES_categ),
               # no borders
@@ -344,15 +345,12 @@ tree_ES_bars <-
     )
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft10.png", 
+       filename = "Output/Phylo_tree_ES_bars_draft_12.png", 
        width = 10, height = 8, units = "cm", dpi = 1000)
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft10.pdf", 
+       filename = "Output/Phylo_tree_ES_bars_draft_12.pdf", 
        width = 10, height = 8, units = "cm")
-
-# Warning message:
-# Removed 22 rows containing missing values (geom_rect).
 
 # =============================================================================
 # References

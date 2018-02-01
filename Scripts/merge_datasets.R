@@ -1,6 +1,16 @@
 ###############################################################################
 ## Script to merge PL data with metadata and citations information.
 ## Also does some data cleaning and checking.
+
+## This script has become obsolete with the introduction of GloPL_with_id.csv file from Joanne
+# This script was initially taking PL_masters_for publication_25_01.xlsx 
+# and merging or checking against data from:
+# - Output/PL_masters_for_publication_with_ES_cols.csv
+# - Data/for_merging/Meta_data_24_01.csv
+# - Data/for_merging/Citations_25_01.csv
+
+# Nevertheless, it served its purpose to help Joanne 
+# to come up with the cleaner file GloPL_with_id.csv 
 ###############################################################################
 
 library(data.table)

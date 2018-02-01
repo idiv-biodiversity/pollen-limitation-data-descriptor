@@ -14,30 +14,21 @@ sapply(.myPackages, require, character.only = TRUE)
 # Read & prepare data
 # =============================================================================
 # Read data - is the output of Compute_ES.R script
-ES_all_dt <- fread("Output/PL_masters_for_publication_with_ES_cols.csv", colClasses = "character")
 # Get only columns of interest
-ES_dt <- ES_all_dt[, .(unique_number,
-                       lon_decemial_unpinned, 
-                       lat_decimal_unpinned, 
-                       Species_accepted_names, 
-                       ES_mst.VS)]
-str(ES_dt)
+ES_dt <- fread("Output/GloPL_with_id_ES.csv", 
+               colClasses = "character",
+               na.strings = c("NA","N/A","null", ""),
+               select = c("unique_number", "Longitude", "Latitude"))
 
 # Transform longitude to numeric
-ES_dt[, lon := as.numeric(lon_decemial_unpinned)]
-ES_dt[is.na(lon)] # the minus sign is not a ream minus sign
-ES_dt[unique_number == "2219", lon := -7.317197]
+ES_dt[, lon := as.numeric(Longitude)]
 
 # Transform latitude to numeric
-ES_dt[, lat := as.numeric(lat_decimal_unpinned)]
+ES_dt[, lat := as.numeric(Latitude)]
 
 # Some routine checking of coordinates values
 range(ES_dt[,lon]) %between% c(-180, 180)
 range(ES_dt[,lat]) %between% c(-90, 90)
-
-# Create ES categories (this was not used for coloring finally)
-ES_dt[, ES_mst.VS := as.numeric(ES_mst.VS)]
-ES_dt[, ES_categ := ifelse(ES_mst.VS <= 0, "neg", "pos")]
 
 # Get unique pairs of coordinates
 # ES_dt_unq <- unique(ES_dt, by = c("lon", "lat"))
@@ -49,9 +40,9 @@ ES_dt[, c("X.prj","Y.prj") := data.table(rgdal::project(xy   = cbind(lon, lat),
 
 # Check points with interactive map
 points_WGS84 <- sp::SpatialPointsDataFrame(coords      = ES_dt[,.(lon,lat)], # order matters
-                                           data        = ES_dt[,.(unique_number, ES_categ)], 
+                                           data        = ES_dt[,.(unique_number)], 
                                            proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-my_html_map <- mapview(points_WGS84, zcol = "ES_categ")
+my_html_map <- mapview(points_WGS84)
 # save as html
 # mapshot(my_html_map, url = "Global_map_ES_categ_html.html")
 
@@ -179,8 +170,8 @@ my_map_ES_categ <- my_base_map +
         plot.margin = unit(c(t = 0, r = 0.8, b = 0, l = -0.5), "cm")
     )
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_9.pdf", 
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_10.pdf", 
        width = 14, height = 7, units = "cm")
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_9.png", 
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_10.png", 
        width = 14, height = 7, units = "cm", dpi = 1000)

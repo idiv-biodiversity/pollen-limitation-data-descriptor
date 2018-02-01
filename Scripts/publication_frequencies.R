@@ -13,37 +13,28 @@ library(scales)
 # =============================================================================
 # Read & prepare data
 # =============================================================================
-# Read latest aggregated dataset with master ES values
-pl_all_dt <- fread("Data/PL_masters_for publication.csv", colClasses = "character")
-
-# Get only columns of interest & remove any empty rows
-pl_dt <- pl_all_dt[unique_number != "", .(Year, unique_number, unique_study_number, Species_accepted_names)]
-
-# Check some stats
-nrow(pl_dt)
-length(unique(pl_dt$unique_number)) # same as pl_dt[, uniqueN(unique_number)]
-length(unique(pl_dt$unique_study_number)) 
-length(unique(pl_dt$Species_accepted_names))
+# Read PL data. Treat all values as character. 
+# Also convert to NA everything that is:
+# "NA", "N/A", "null", "" (last one is treated as blank in Excel).
+pl_dt <- fread("Output/GloPL_with_id_ES.csv", 
+               colClasses = "character",
+               na.strings = c("NA","N/A","null", ""),
+               select = c("unique_number", "unique_study_number", "Year"))
 
 # There are character values for variable Year
+# NAs will be introduced by coercion
 unique(pl_dt$Year)
-# replace "2003b" with "2003" so to avoid transformation to NA when applying as.numeric
-pl_dt[Year == "2003b", Year := "2003"]
 pl_dt[, Year := as.numeric(Year)]
-
-# check which records got NA for variable Year:
-pl_dt[is.na(Year)]
-str(pl_dt)
 
 # Aggregate
 data_4graph <- pl_dt[!is.na(Year), # consider only records that have year information
                      .(N_publications = uniqueN(unique_study_number),
                        N_studies = uniqueN(unique_number)), # same as = .N here (if a study is a row)
                      by = Year]
-data_4graph <- data_4graph[order(Year)]
+setorder(data_4graph, Year)
 data_4graph[, N_cumul_studies := cumsum(N_studies)]
 
-# Note that summing up N_publications will give less than pl_dt[, uniqueN(unique_number)] 
+# Note that summing up N_publications will give less than pl_dt[, uniqueN(unique_study_number)] 
 # because publications without year were removed
 write.csv(data_4graph, "Output/table_for_publication_freq_graph_ok.csv", row.names = FALSE)
 
@@ -108,16 +99,13 @@ my_plot <-
                            "mm")
     )
 
-# inspect graph
-my_plot
-
 # save graph
 ggsave(plot = my_plot,
-       filename = "Output/Publication_freq_draft_3.pdf", 
+       filename = "Output/Publication_freq_draft_5.pdf", 
        width = 9, height = 5.5, units = "cm")
 
 ggsave(plot = my_plot,
-       filename = "Output/Publication_freq_draft_3.png", 
+       filename = "Output/Publication_freq_draft_5.png", 
        width = 9, height = 5.5, units = "cm", dpi = 1000)
 
 # =============================================================================

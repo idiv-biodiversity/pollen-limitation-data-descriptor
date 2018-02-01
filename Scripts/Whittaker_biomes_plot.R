@@ -93,14 +93,14 @@ biomes_plot <- ggplot() +
 # =================================================================================
 set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_3.pdf"), 
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_4.pdf"), 
        width    = 9, 
        height   = 7, 
        units    = "cm")
 
 set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_3.png"),
+       filename = file.path("Output", "Whittaker_diagram_biomes_draf_4.png"),
        width    = 9, 
        height   = 7, 
        units    = "cm",

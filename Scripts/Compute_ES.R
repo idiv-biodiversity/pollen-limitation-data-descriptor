@@ -81,9 +81,8 @@ PL_dt[, (cols_to_numeric) := lapply(.SD, as.numeric), .SDcols = cols_to_numeric]
 
 
 # =============================================================================
-# Compute pollen limitation effect sizes (ES).
-# For all records, simple means were applied for consistency 
-# (weighted means are NOT used as they were applicable to only a few cases).
+# Compute pollen limitation effect sizes (ES = log response ratio).
+# No aggregation takes place here, just computing the simple log response ratios.
 # =============================================================================
 
 PL_dt[, ":=" # go inside data table environment and start assigning/creating following columns

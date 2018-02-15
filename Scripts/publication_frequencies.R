@@ -16,7 +16,7 @@ library(scales)
 # Read PL data. Treat all values as character. 
 # Also convert to NA everything that is:
 # "NA", "N/A", "null", "" (last one is treated as blank in Excel).
-pl_dt <- fread("Output/GloPL_with_id_ES.csv", 
+pl_dt <- fread("Output/GloPL_with_id_updated_ES.csv", 
                colClasses = "character",
                na.strings = c("NA","N/A","null", ""),
                select = c("unique_number", "unique_study_number", "Year"))

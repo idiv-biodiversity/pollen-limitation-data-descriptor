@@ -1,5 +1,6 @@
 ###############################################################################
 ## Script to attempt catching typos & artefacts and updates ES columns.
+## Outputs a CSV file with cleaned values for submission.
 ###############################################################################
 
 library(data.table)
@@ -10,14 +11,9 @@ library(data.table)
 # Read PL data. Treat all values as character. 
 # Also convert to NA everything that is:
 # "NA", "N/A", "null", "" (last one is treated as blank in Excel).
-pl_dt <- fread("Data/GloPL_with_id.csv", 
+pl_dt <- fread("output/GloPL_with_id_updated.csv", 
                colClasses = "character", 
                na.strings = c("NA","N/A","null", ""))
-
-# Check for empty rows (Excel does this to tables...)
-pl_dt[,.(unique_number)]
-# Remove any empty rows, if any
-pl_dt <- pl_dt[unique_number != ""]
 
 # Read PL effect size computed with the script Compute_ES.R
 pl_es <- fread("output/PL_ES.csv", colClasses = "character")
@@ -182,7 +178,7 @@ pl_dt[pl_es, on = "unique_number",
             PL_Effect_Size_Type1 = ES_mst_idx.VS,
             PL_Effect_Size_Type2 = ES_mst_S.Bo.VS)]
 # Save to csv file
-write.csv(pl_dt, file = "Output/GloPL_with_id_ES.csv", row.names = FALSE)
+write.csv(pl_dt, file = "Output/GloPL_with_id_updated_ES.csv", row.names = FALSE)
 
 # =============================================================================
 # Optional - Final data checking

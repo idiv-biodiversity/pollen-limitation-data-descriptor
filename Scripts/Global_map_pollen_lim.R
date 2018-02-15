@@ -15,7 +15,7 @@ sapply(.myPackages, require, character.only = TRUE)
 # =============================================================================
 # Read data - is the output of Compute_ES.R script
 # Get only columns of interest
-ES_dt <- fread("Output/GloPL_with_id_ES.csv", 
+ES_dt <- fread("Output/GloPL_with_id_updated_ES.csv", 
                colClasses = "character",
                na.strings = c("NA","N/A","null", ""),
                select = c("unique_number", "Longitude", "Latitude"))

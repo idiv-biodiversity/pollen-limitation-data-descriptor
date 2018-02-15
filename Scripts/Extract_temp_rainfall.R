@@ -16,7 +16,7 @@ source("https://raw.githubusercontent.com/valentinitnelav/helpers/master/R/extra
 # Read & prepare data
 # =============================================================================
 # Read PL data
-PL_dt <- fread("Output/GloPL_with_id_ES.csv", 
+PL_dt <- fread("Output/GloPL_with_id_updated_ES.csv", 
                colClasses = "character",
                na.strings = c("NA","N/A","null", ""),
                select = c("unique_number", "Longitude", "Latitude"))

@@ -251,7 +251,7 @@ coord_groups[, hjust_adj := ifelse(angle %between% c(90, 270), yes = 1, no = 0)]
 # Prepare ES values for creating the circular barplot effect
 # -----------------------------------------------------------------------------
 # Read PL table with ES (effect size) data
-ES_all_dt <- fread("Output/GloPL_with_id_ES.csv",
+ES_all_dt <- fread("Output/GloPL_with_id_updated_ES.csv",
                    select = c("Species_accepted_names", "PL_Effect_Size"))
 
 # Compares species in data and tree.
@@ -345,11 +345,11 @@ tree_ES_bars <-
     )
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft_12.png", 
+       filename = "Output/Phylo_tree_ES_bars_draft_13.png", 
        width = 10, height = 8, units = "cm", dpi = 1000)
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft_12.pdf", 
+       filename = "Output/Phylo_tree_ES_bars_draft_13.pdf", 
        width = 10, height = 8, units = "cm")
 
 # =============================================================================

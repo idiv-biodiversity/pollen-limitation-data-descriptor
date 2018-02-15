@@ -1,6 +1,9 @@
 ###############################################################################
 # Script to compute pollen limitation effect sizes (ES).
-# Run this script first.
+# Outputs a CSV file with effect size (ES - the log response ratio) 
+# and other helper ES columns.
+# These columns will replace any existing ES columns in the row data 
+# (this takes place in check_clean_update.R) 
 ###############################################################################
 
 library(data.table)
@@ -8,17 +11,11 @@ library(data.table)
 # =============================================================================
 # Read & prepare data
 # =============================================================================
-# Read PL data. Treat all values as character. 
-# Also convert to NA everything that is:
+# Read PL data. Treat all values as character. Also convert to NA everything that is:
 # "NA", "N/A", "null", "" (last one is treated as blank in Excel).
-PL_dt <- fread("Data/GloPL_with_id.csv", 
+PL_dt <- fread("output/GloPL_with_id_updated.csv", 
                colClasses = "character", 
                na.strings = c("NA","N/A","null", ""))
-
-# Check for empty rows (Excel does this to tables...)
-PL_dt[,.(unique_number)]
-# Remove any empty rows, if any
-PL_dt <- PL_dt[unique_number != ""]
 
 # -----------------------------------------------------------------------------
 # Read meta_data (all columns as character)
@@ -232,16 +229,3 @@ PL_dt[, ":=" # go inside data table environment and start assigning/creating (:=
 # save to csv file
 pl_es <- PL_dt[,.(unique_number, ES_mst.VS, ES_mst_idx.VS, ES_mst_S.Bo.VS)]
 write.csv(pl_es, file = "Output/PL_ES.csv", row.names = FALSE)
-
-# =============================================================================
-# Testing with older versions of master ES computation
-# =============================================================================
-tst_dt <- fread(file = "Output/Archive/PL_masters_for_publication_with_ES_cols_old.csv",
-                select = c("unique_number", "ES_mst.VS"))
-tst_dt <- merge(x = tst_dt,
-                y = pl_es[,.(unique_number, ES_mst.VS)], # or use PL_Effect_Size instead of ES_mst.VS
-                by = "unique_number",
-                sort = FALSE, all = TRUE)
-tst_dt[, dif := ES_mst.VS.x - ES_mst.VS.y]
-# tst_dt[, dif := ES_mst.VS - PL_Effect_Size]
-setorder(tst_dt, dif)

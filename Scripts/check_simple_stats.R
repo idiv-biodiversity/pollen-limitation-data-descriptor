@@ -7,7 +7,7 @@ library(readxl)
 setwd("C:/Dropbox (iDiv)/_iDiv/Projects/pollen_limitation/Graphs_nature_dataset")
 
 # read merged PL data
-pl_dt <- fread("output/GloPL_with_id_ES.csv")
+pl_dt <- fread("output/GloPL_with_id_updated_ES.csv")
 # str(pl_dt)
 
 # Check that all the unique study numbers that are in the PL data file exist in the citation file as well.

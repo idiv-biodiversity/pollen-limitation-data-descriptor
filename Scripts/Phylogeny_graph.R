@@ -1,6 +1,8 @@
-###############################################################################
+# /////////////////////////////////////////////////////////////////////////
 ## Phylogeny tree graph for pollen limitation dataset
-###############################################################################
+# /////////////////////////////////////////////////////////////////////////
+
+rm(list = ls()); gc(reset = TRUE)
 
 # Load packages
 
@@ -33,96 +35,26 @@ library(taxize)
 library(Taxonstand)
 library(wikitaxa)
 
-# =============================================================================
-# Read & prepare data
-# =============================================================================
-# Read species names and their corresponding family (file from Tiffany).
-# This file might be optional.
-data_aggregated <- data.table(readxl::read_excel(path = "Data/phylogeny/specieslist.xlsx", 
-                                                 sheet     = 1, 
-                                                 col_names = TRUE))
-# Get only unique records by species names
-dataspecies <- unique(data_aggregated, by = "Species_accepted_names")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Read & prepare data -----------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Read phylogeny information to be used for labeling the plot
-# Phylogeny information_VS.xlsx contains some corrections as oposed to Phylogeny information.xlsx
-Phylo_info <- data.table(readxl::read_excel(path = "Data/phylogeny/Phylogeny information_VS.xlsx", 
-                                            sheet     = 1, 
-                                            col_names = TRUE))
+# "Phylogeny information_VS.xlsx" contains some corrections as oposed to 
+# "Phylogeny information.xlsx"
+Phylo_info <- readxl::read_excel(path = "Data/phylogeny/Phylogeny information_VS.xlsx", 
+                                 sheet     = 1, 
+                                 col_names = TRUE)
+setDT(Phylo_info)
 # Defensively replace spaces with "_" in column names
 data.table::setnames(Phylo_info, gsub("\\s+", "_", names(Phylo_info)))
 
-# Check if any differences by species names between the 2 files
-# This is important because the key to merge the files is the species names
-all.equal(sort(Phylo_info$Species_accepted_names, na.last = TRUE), 
-          sort(dataspecies$Species_accepted_names, na.last = TRUE))
 
-# Merge the two files
-Phylo_info <- merge(x = Phylo_info,
-                    y = dataspecies[,.(Species_accepted_names, Family)],
-                    by = "Species_accepted_names",
-                    all.x = TRUE)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Prepare phylogeny tree for plotting -------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# -----------------------------------------------------------------------------
-# Check some taxa names
-# -----------------------------------------------------------------------------
-my_sp <- fread("Output/taxa_to_check_VS.csv")
-
-my_sp <- merge(x = my_sp,
-               y = Phylo_info,
-               by.x = "taxa",
-               by.y = "Species_accepted_names",
-               all.x = TRUE, sort = FALSE)
-
-# replace _ with white space
-my_sp[, taxa := gsub(pattern = "_", replacement = " ", x = taxa)]
-
-# gives errors
-# taxize::classification(x = my_sp$taxa, db = "tol")
-
-# Connects to The Plant List (TPL) website and validates the names
-my_tpl <- data.table(Taxonstand::TPL(splist = my_sp$taxa))
-setnames(my_tpl, paste0(names(my_tpl), "_TPL"))
-my_tpl
-
-my_sp <- merge(x = my_sp,
-               y = my_tpl[, c("Taxon_TPL", "Taxonomic.status_TPL", "Family_TPL", "New.Genus_TPL",
-                              "New.Species_TPL", "New.Taxonomic.status_TPL", "Typo_TPL")],
-               by.x = "taxa",
-               by.y = "Taxon_TPL",
-               all.x = TRUE, sort = FALSE)
-
-my_families <- unique(my_sp$Family_TPL)
-my_orders <- vector(mode = "character", length = length(my_families))
-
-# Retrieve info from WikiSpecies about orders based on given families.
-# Had to use WikiSpeceis because TPL does not return order.
-# Try running several times if NA-s are returned - I guess it depends on the API connection somehow.
-for (i in 1:length(my_families)){
-    my_dt <- data.table(wikitaxa::wt_wikispecies(name = my_families[i])$classification)
-    # some cases might not match properly and does not retrieve order information,
-    # so, assign NA for such cases
-    my_ord <- my_dt[rank == "Ordo", name]
-    my_orders[i] <- ifelse(length(my_ord) != 0, my_ord, NA)
-}
-
-my_orders_df <- data.frame(my_families, order_wikitaxa = my_orders)
-
-my_sp <- merge(x = my_sp,
-               y = my_orders_df,
-               by.x = "Family_TPL",
-               by.y = "my_families",
-               all.x = TRUE, sort = FALSE)
-
-# move "Family_TPL" column from first to last position
-setcolorder(my_sp, c(setdiff(names(my_sp), "Family_TPL"), "Family_TPL"))
-
-writexl::write_xlsx(my_sp, path = "Output/taxa_to_check_TPL_suggest_VS.xlsx")
-
-
-# -----------------------------------------------------------------------------
-# Prepare phylogeny tree for plotting
-# -----------------------------------------------------------------------------
 # Read tree from Jana (received on Wednesday, January 10, 2018 12:20 AM)
 tree <- read.tree("Data/phylogeny/Aggre.tree_new.tre")
 tree$tip.label[1:5] # check formating of first 5 species names
@@ -136,7 +68,7 @@ geiger::name.check(phy = tree, data = my_sp)
 # setdiff(tree$tip.label, Phylo_info$Species_accepted_names)
 # setdiff(Phylo_info$Species_accepted_names, tree$tip.label)
 
-# Remove extra taxa from phylogeny
+# Remove extra taxa from phylogeny tree
 SiteTree <- ape::drop.tip(phy = tree, 
                           tip = c("Physocarpus_amurensis",
                                   "Silene_stockenii"))
@@ -150,7 +82,8 @@ write.nexus(SiteTree, file = "Output/SiteTree_VS_nexus")
 
 # Merge tree tip labels with annotation data from Phylo_info;
 # "tip.label" column name needs to be used exactly as such (with this name).
-# This will be needed for merging annotation data with the tree (with  %<+% operator) using tip.label as key.
+# This will be needed for merging annotation data with the tree 
+# (with  %<+% operator) using tip.label as key.
 tip_lbs <- data.table(tip.label = SiteTree$tip.label)
 Phylo_info_merged <- merge(x = tip_lbs, 
                            y = Phylo_info, 
@@ -166,11 +99,12 @@ APG4_gr <- split(Phylo_info_merged$tip.label, Phylo_info_merged$APG4_group)
 names(APG4_gr)
 SiteTree_gr <- ggtree::groupOTU(SiteTree, APG4_gr)
 str(SiteTree_gr)
-# There is a "0" group label - "0 is for those didn't belong to any group."
+# There is a "0" group label - "0 is for those which didn't belong to any group"
 # https://github.com/GuangchuangYu/ggtree/issues/127
 levels(attributes(SiteTree_gr)$group) # check all group labels
 # Overwrite "0" with "Basal" so that the basal segments get the same color.
-# similar to: https://en.wikipedia.org/wiki/Phylogenetic_tree#/media/File:CollapsedtreeLabels-simplified.svg
+# similar to: 
+# https://en.wikipedia.org/wiki/Phylogenetic_tree#/media/File:CollapsedtreeLabels-simplified.svg
 levels(attributes(SiteTree_gr)$group)[1] <- "Basal"
 # Reorder factor levels if needed
 attributes(SiteTree_gr)$group <- factor(x = attributes(SiteTree_gr)$group, 
@@ -179,22 +113,26 @@ attributes(SiteTree_gr)$group <- factor(x = attributes(SiteTree_gr)$group,
                                                    "Magnoliids", 
                                                    "Monocot"))
 
-# =============================================================================
-# Plot tree with ES bars
-# =============================================================================
 
-# -----------------------------------------------------------------------------
-# Experiment with color
-# -----------------------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Plot tree with ES bars --------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ...............................................
+# ... Experiment with color -----------------------------------------------
+# ...............................................
+
 my_cols <- brewer.pal(n = 4, name = "Set1")
 names(my_cols) <- levels(attributes(SiteTree_gr)$group)
 scales::show_col(my_cols); my_cols
 my_cols[1] <- "#000000" # assign black to basal 
 scales::show_col(my_cols); my_cols
 
-# -----------------------------------------------------------------------------
-# Build base graph tree
-# -----------------------------------------------------------------------------
+
+# ...............................................
+# ... Build base graph tree -----------------------------------------------
+# ...............................................
+
 tree_pl <- 
     ggtree(tr      = SiteTree_gr, 
            mapping = aes(color = group), 
@@ -205,9 +143,11 @@ tree_pl <-
     scale_color_manual(name = 'Clade',
                        values = my_cols)
 
-# -----------------------------------------------------------------------------
-# Construct table of coordinates for segment annotations
-# -----------------------------------------------------------------------------
+
+# ...............................................
+# ... Construct table of coordinates for segment annotations --------------
+# ...............................................
+
 # Attaches annotation data to a tree view.
 # Doing so, all variables in the Phylo_info_merged are visible to ggtree
 tree_pl <- tree_pl %<+% Phylo_info_merged 
@@ -217,9 +157,11 @@ tree_dt <- data.table(tree_pl$data)
 # select only the tips and order by coord y
 tree_dt <- tree_dt[isTip == TRUE][order(y)]
 
-# Make table with y cords for each group; this helps for drawing & labeling segments.
+# Make a table with y cords for each group; 
+# this helps for drawing & labeling segments.
 # Note the usage of "rleid" function, which is a grouping ID generator,
-# needed because consecutive rows of an identical reoccurring group must form a unique group.
+# needed because consecutive rows of an identical reoccurring group 
+# must form a unique group.
 coord_groups <- tree_dt[, .(y1 = y[1],
                             y2 = y[.N],
                             angle = mean(angle),
@@ -247,11 +189,13 @@ coord_groups[, hjust_adj := ifelse(angle %between% c(90, 270), yes = 1, no = 0)]
 # if needed, coloring of segments could be binary 
 # coord_groups[, col := ifelse(.I%%2, 0.5, 1)]
 
-# -----------------------------------------------------------------------------
-# Prepare ES values for creating the circular barplot effect
-# -----------------------------------------------------------------------------
-# Read PL table with ES (effect size) data
-ES_all_dt <- fread("Output/GloPL_with_id_updated_ES.csv",
+
+# ...............................................
+# ... Prepare ES values for creating the circular barplot effect ----------
+# ...............................................
+
+# Read PL table with ES (effect size) data - only needed columns
+ES_all_dt <- fread("Output/share/GloPL_with_id_updated_ES.csv",
                    select = c("Species_accepted_names", "PL_Effect_Size"))
 
 # Compares species in data and tree.
@@ -259,9 +203,11 @@ ES_all_dt <- fread("Output/GloPL_with_id_updated_ES.csv",
 my_sp_ES <- 1:length(unique(ES_all_dt$Species_accepted_names))
 names(my_sp_ES) <- unique(ES_all_dt$Species_accepted_names)
 geiger::name.check(phy = SiteTree_gr, data = my_sp_ES)
+# OK, all good
 
 # Compute average ES per species
-ES_dt <- ES_all_dt[, .(PL_Effect_Size = mean(as.numeric(PL_Effect_Size), na.rm = TRUE)), 
+ES_dt <- ES_all_dt[, .(PL_Effect_Size = mean(as.numeric(PL_Effect_Size), 
+                                             na.rm = TRUE)), 
                    by = Species_accepted_names]
 
 # Join mean ES values to each species
@@ -273,20 +219,31 @@ tree_dt[, ES_categ := ifelse(PL_Effect_Size <= 0, "neg", "pos")]
 
 # Define variable to control the x coordinates of bars (segments)
 my_factor <- 10 # multiplicative factor to ES values so that differences get enhanced
-x_base <- max(tree_dt$x) + abs(min(tree_dt$PL_Effect_Size, na.rm = TRUE))*my_factor + 2
+x_base <-
+    max(tree_dt$x) +
+    abs(min(tree_dt$PL_Effect_Size, na.rm = TRUE)) *
+    my_factor + 2
 
 # Define variable to control the x coordinates of segments & labels
-my_x <- x_base + max(tree_dt$PL_Effect_Size, na.rm = TRUE)*my_factor + 5
+my_x <-
+    x_base +
+    max(tree_dt$PL_Effect_Size, na.rm = TRUE) *
+    my_factor + 5
 
-# Plot
+
+# ...............................................
+# ... Make and save plot --------------------------------------------------
+# ...............................................
+
 tree_ES_bars <- 
     tree_pl + 
     # Add a background disc to plot ES bars on top of it
     geom_rect(data = tree_dt,
-              aes(xmin = x_base + min(PL_Effect_Size, na.rm = TRUE)*my_factor,
+              aes(xmin = x_base + min(PL_Effect_Size, na.rm = TRUE) * my_factor,
                   ymin = 0,
-                  xmax = x_base + max(PL_Effect_Size, na.rm = TRUE)*my_factor,
-                  ymax = max(y)+1), # +1 to force complete circle (otherwise a stripe of white remains)
+                  xmax = x_base + max(PL_Effect_Size, na.rm = TRUE) * my_factor,
+                  ymax = max(y) + 1), 
+              # +1 to force complete circle, otherwise a stripe of white remains.
               color = NA, # set NA so to avoid coloring borders
               fill = "#deebf7", # or try "#8da0cb"
               alpha = 0.1) +
@@ -345,16 +302,18 @@ tree_ES_bars <-
     )
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft_13.png", 
+       filename = "Output/Phylo_tree_ES_bars_draft_14.png", 
        width = 10, height = 8, units = "cm", dpi = 1000)
 
 ggsave(plot = tree_ES_bars,
-       filename = "Output/Phylo_tree_ES_bars_draft_13.pdf", 
+       filename = "Output/Phylo_tree_ES_bars_draft_14.pdf", 
        width = 10, height = 8, units = "cm")
 
-# =============================================================================
-# References
-# =============================================================================
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# References --------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # ggtree:
 #   https://bioconductor.org/packages/release/bioc/html/ggtree.html
 #   https://guangchuangyu.github.io/ggtree/

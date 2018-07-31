@@ -2,29 +2,22 @@
 
 **Running scripts respects a certain order:**
 
-1. clean data and compute ES
-2. make graphs & run simple stats
+1. Compute ES and prepare data 
+2. Make graphs & run simple stats
 
-## 1) Data cleaning and compute ES
+## 1) Compute ES and prepare data
 
-### 1.1. `diff_analysis_data.R`
+### 1.1 Run `Compute_ES.R`
 
-Script to apply some corrections on the row data used for graphs and for submitting.
-There were mismatches between the raw data assumed cleaned for submission and the data for analysis.
-It seems that the data for analysis got updated manually while the row data not.
-Therefore, this script was introduced lately and attempts to find mismatches between the two version of the data and align them. This cleaning step unfortunately added complexity to the workflow, therefore the order of the scripts needs to be respected.
+No aggregation takes place, just computing ES using several methods. No need to run the helper script `ES_functions.R` which contains the helper ES functions. This script is run on the fly from `Compute_ES.R`. Several ways of computing ES were tested. Results are also used as histograms for the distribution of `PL_Effect_Size...` variables.
 
-### 1.2. `Compute_ES.R`
+### 1.2 Run `prepare_data.R`
 
-No aggregation takes place, just computing the simple log response ratios as ES.
-Computes ES columns that will replace existing ES columns from the main PL data (output of `diff_analysis_data.R`)  (updating is done in the next step - `check_clean_update.R`).
+This script produces the cleaned version of PL data that is further used for making graphs and that will end up published.
+It updates the master ES columns in the raw data file - `GloPL_with_id…` It also does some data cleaning.
 
-### 1.3. `check_clean_update.R`
+Note that previosly, the scripts `diff_analysis_data.R`, `check_clean_update.R` and further `merge_datasets.R` carried a fair amount of data checking and cleaning but are now **obsolete**.
 
-This script produces the cleaned version of PL data that is further used for making graphs and submission.
-Executes data cleaning (checks for potential typos with regular expression and gives sorted unique values per column in order to detect any possible artefacts). 
-
-Note that previosly, the script `merge_datasets.R`, carried a fair amount of data checking and cleaning but is now **obsolete**. It also used to merge (join) PL data with metadata and citations information. It is kept nevertheless for tracking back the cleaning process if ever needed. But some of the files used as input are now obsolete since some data cleaning was done manually in the file `GloPL_with_id.csv`. The script `merge_datasets.R` actually helped at detecting the data artefacts. Therefore is kept now as documentation.
 
 ## 2) Graphs
 Order of script execution is not an issue this time, with the exception that before executing `Whittaker_biomes_plot.R` one must run `Extract_temp_rainfall.R`.
@@ -48,7 +41,7 @@ See `Global_map_pollen_lim.R` script.
 See `Phylogeny_graph.R` script.
 
 ### Publications/'PL cases' frequencies graph
-See ` publication_frequencies.R` script.
+See `publication_frequencies.R` script.
 
-## 3) Simple stats and ANOVA
+## 3) Simple stats and ANOVA (optional)
 See `check_simple_stats.R` script. 

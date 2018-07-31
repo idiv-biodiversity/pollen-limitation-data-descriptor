@@ -1,6 +1,8 @@
-####################################################################################
+# /////////////////////////////////////////////////////////////////////////
 ## Whittaker diagram for biomes and study locations.
-####################################################################################
+# /////////////////////////////////////////////////////////////////////////
+
+rm(list = ls()); gc(reset = TRUE)
 
 # install.packages("devtools")
 # devtools::install_github("valentinitnelav/plotbiomes")
@@ -9,12 +11,15 @@
 # Ricklefs, R. E. (2008), The economy of nature. W. H. Freeman and Company. 
 # (Chapter 5, Biological Communities, The biome concept).
 library(plotbiomes)
+library(ggplot2)
 library(data.table)
 
-# =================================================================================
-# Read & prepare data
-# =================================================================================
-my_dt <- fread("Output/extractions_temp_pp.csv")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Read & prepare data -----------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+my_dt <- fread("Output/cache/extractions_temp_pp.csv")
 str(my_dt) # unique_number should be character
 
 # Temperature needs to be divided by 10
@@ -27,9 +32,11 @@ my_dt[, Annual_pp_mm := NULL]
 # Can try using unique combinations of precipitation & temperature
 # my_dt <- unique(my_dt, by = c("Annual_mean_temp_C", "Annual_pp_cm"))
 
-# =================================================================================
-# Plot biomes
-# =================================================================================
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Plot biomes -------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 biomes_plot <- ggplot() +
     # Add whittaker biomes layer
     geom_polygon(data = plotbiomes::Whittaker_biomes,
@@ -48,15 +55,12 @@ biomes_plot <- ggplot() +
     # Add unique combinations of precipitation & temperature
     geom_point(data = my_dt, 
                aes(x = Annual_mean_temp_C, 
-                   y = Annual_pp_cm,
-                   # text will be ignored in ggplot but will be used for hovering purposes in plotly
-                   # this makes point identification interactive
-                   text = paste0('unique_number: ', unique_number)),
+                   y = Annual_pp_cm),
                # position = position_jitter(width = 0.1, height = 0.1),
-               size   = 0.4,
+               size   = 0.5,
                shape  = 1,
-               colour = "dodgerblue4",
-               alpha  = 1) + # set opacity level 
+               colour = "black",
+               alpha  = 1/2) + # set opacity level 
     # set range on OX axes and adjust the distance (gap) from OY axes
     scale_x_continuous(expand = c(0.02, 0)) +
     # set range on OY axes and adjust the distance (gap) from OX axes
@@ -88,19 +92,21 @@ biomes_plot <- ggplot() +
                            "mm")
     )
 
-# =================================================================================
-# Save to pdf and png file
-# =================================================================================
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Save to pdf and png file ------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_4.pdf"), 
+       filename = "Output/Whittaker_diagram_biomes_draf_5.pdf", 
        width    = 9, 
        height   = 7, 
        units    = "cm")
 
 set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
-       filename = file.path("Output", "Whittaker_diagram_biomes_draf_4.png"),
+       filename = "Output/Whittaker_diagram_biomes_draf_5.png",
        width    = 9, 
        height   = 7, 
        units    = "cm",

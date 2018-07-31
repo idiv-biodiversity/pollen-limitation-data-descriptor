@@ -1,25 +1,21 @@
-###############################################################################
+# /////////////////////////////////////////////////////////////////////////
 ## Script to check some stats and values.
-###############################################################################
+# /////////////////////////////////////////////////////////////////////////
+
+rm(list = ls()); gc(reset = TRUE)
 
 library(data.table)
 library(readxl)
-setwd("C:/Dropbox (iDiv)/_iDiv/Projects/pollen_limitation/Graphs_nature_dataset")
+
+# The hack with the setting of the working directory below is important only if
+# compiling this script as HTML report
+setwd(gsub(pattern = '/Scripts', replacement = '', x = getwd()))
+
 
 # read merged PL data
-pl_dt <- fread("output/GloPL_with_id_updated_ES.csv")
+pl_dt <- fread("output/share/GloPL_with_id_updated_ES.csv")
 # str(pl_dt)
 
-# Check that all the unique study numbers that are in the PL data file exist in the citation file as well.
-citations_dt <- fread(file = "Data/for_merging/Citations_25_01.csv",
-                      colClasses = "character")
-# Replace spaces with dots in column names
-data.table::setnames(citations_dt, gsub(" ", ".", names(citations_dt)))
-citations_dt[, row_idx_citations := 1:.N]
-
-all.equal(unique(sort(pl_dt$unique_study_number)),
-          unique(sort(citations_dt$Unquic.study.Number)))
-# TRUE
 
 # Number of unique studies 
 length(unique(pl_dt$unique_study_number))
@@ -71,4 +67,4 @@ TukeyHSD(aov.model)
 # Adjust margins of plotting region (Bottom, Left, Top, Right)
 par(mai = c(1,2.5,1,0.5))
 plot(TukeyHSD(aov.model), las=2)
-dev.off()
+# dev.off()

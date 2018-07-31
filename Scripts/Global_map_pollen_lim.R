@@ -1,6 +1,8 @@
-###############################################################################
+# /////////////////////////////////////////////////////////////////////////
 ## Global map for pollen limitation dataset
-###############################################################################
+# /////////////////////////////////////////////////////////////////////////
+
+rm(list = ls()); gc(reset = TRUE)
 
 # List of packages for session (add here any new desired packages)
 .myPackages = c("rgdal", "sp", "data.table", "ggplot2", "mapview" ,"gplots")
@@ -10,12 +12,14 @@ if(length(.myPackages[!.inst]) > 0) install.packages(.myPackages[!.inst])
 # Load packages into session 
 sapply(.myPackages, require, character.only = TRUE)
 
-# =============================================================================
-# Read & prepare data
-# =============================================================================
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Read & prepare data -----------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Read data - is the output of Compute_ES.R script
 # Get only columns of interest
-ES_dt <- fread("Output/GloPL_with_id_updated_ES.csv", 
+ES_dt <- fread("Output/share/GloPL_with_id_updated_ES.csv", 
                colClasses = "character",
                na.strings = c("NA","N/A","null", ""),
                select = c("unique_number", "Longitude", "Latitude"))
@@ -46,9 +50,11 @@ my_html_map <- mapview(points_WGS84)
 # save as html
 # mapshot(my_html_map, url = "Global_map_ES_categ_html.html")
 
-# =============================================================================
-# Load & prepare NaturalEarth shapefiles
-# =============================================================================
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Load & prepare NaturalEarth shapefiles ----------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 load("Data/NaturalEarth.RData"); setDT(lbl.Y); setDT(lbl.X)
 # Details about NaturalEarth shapefiles:
 #   The files were already downloaded from http://www.naturalearthdata.com/
@@ -90,13 +96,13 @@ lbl.X[, Y.prj := ifelse(lat < 0,
                         yes = Y.prj - my_nudge[1,2], 
                         no = Y.prj + my_nudge[1,2])]
 
-# =============================================================================
-# Plot map
-# =============================================================================
 
-# -----------------------------------------------------------------------------
-# Prepare simple map
-# -----------------------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Plot map ----------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ... Prepare simple map --------------------------------------------------
+
 my_base_map <- 
     ggplot() +
     # ___ add graticules projected to Robinson
@@ -135,25 +141,26 @@ my_base_map <-
                  colour ="black", 
                  fill   ="transparent", # try also "lightblue" but add a separate polygon as first layer
                  size   = 0.2) +
-    # "Regions defined for each Polygons" warning has to do with fortify transformation. Might get deprecated in future!
-    # ___ the default ratio = 1 in coord_fixed ensures that one unit on the x-axis is the same length as one unit on the y-axis
+    # "Regions defined for each Polygons" warning has to do with fortify transformation. 
+    # Might get deprecated in future!
+    # ___ the default ratio = 1 in coord_fixed ensures that one unit on the x-axis 
+    # is the same length as one unit on the y-axis
     coord_fixed(ratio = 1) +
-    # Remove the background and default gridlines with theme_nothing() from the ggmap package
     # ___ remove the background and default gridlines
     theme_void()
 
-# -----------------------------------------------------------------------------
-# Add study locations (points)
-# -----------------------------------------------------------------------------
+
+# ... Add study locations (points) ----------------------------------------
+
 my_map_ES_categ <- my_base_map +
     # ___ add the XY points
     geom_point(data = ES_dt, 
                aes(x = X.prj, 
                    y = Y.prj),
-               color = "dodgerblue4",
+               color = "black",
                size  = 0.5,
                shape = 1,
-               alpha = 1) +
+               alpha = 1/2) +
     # Adjust theme components
     theme(
         # Set font size & family - affects legend only 
@@ -170,8 +177,8 @@ my_map_ES_categ <- my_base_map +
         plot.margin = unit(c(t = 0, r = 0.8, b = 0, l = -0.5), "cm")
     )
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_10.pdf", 
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_11.pdf", 
        width = 14, height = 7, units = "cm")
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_10.png", 
+ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_11.png", 
        width = 14, height = 7, units = "cm", dpi = 1000)

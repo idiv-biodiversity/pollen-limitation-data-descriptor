@@ -1,8 +1,10 @@
-###############################################################################
+# /////////////////////////////////////////////////////////////////////////
 ## Script to prepare data for plotting with Whittaker biomes.
 ## Extracts Annual precipitation amount [mm] and Annual mean temperature [°C] 
 ## for each study location in the row pollen limitation dataset.
-###############################################################################
+# /////////////////////////////////////////////////////////////////////////
+
+rm(list = ls()); gc(reset = TRUE)
 
 library(data.table)
 library(raster)
@@ -12,11 +14,13 @@ library(RANN)
 # Source buffer-extraction function from GitHub
 source("https://raw.githubusercontent.com/valentinitnelav/helpers/master/R/extract_FromNearCellRst.R")
 
-# =============================================================================
-# Read & prepare data
-# =============================================================================
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Read & prepare data -----------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Read PL data
-PL_dt <- fread("Output/GloPL_with_id_updated_ES.csv", 
+PL_dt <- fread("Output/share/GloPL_with_id_updated_ES.csv", 
                colClasses = "character",
                na.strings = c("NA","N/A","null", ""),
                select = c("unique_number", "Longitude", "Latitude"))
@@ -35,9 +39,11 @@ PL_dt[, Latitude := NULL]
 range(PL_dt[,lon]) %between% c(-180, 180)
 range(PL_dt[,lat]) %between% c(-90, 90)
 
-# =============================================================================
-# Raster extractions
-# =============================================================================
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Raster extractions ------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Get unique pairs of coordinates
 xy_unq <- unique(PL_dt[,.(lon, lat)], by = c("lon", "lat") )
 
@@ -87,4 +93,4 @@ extr_res <- merge(x  = PL_dt,
                   sort  = FALSE)
 str(extr_res)
 # save results
-write.csv(extr_res, "Output/extractions_temp_pp.csv", row.names = FALSE)
+write.csv(extr_res, "Output/cache/extractions_temp_pp.csv", row.names = FALSE)

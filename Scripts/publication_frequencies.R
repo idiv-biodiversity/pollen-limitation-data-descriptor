@@ -59,8 +59,8 @@ max(data_4graph$N_publications)/max(data_4graph$N_cumul_studies)
 mypal = ggsci::pal_npg("nrc", alpha = 1)(2)
 scales::show_col(mypal); mypal
 
-color_bars <- "#90B5CE" # "#4DBBD5FF"
-color_line <- "#345269" # "#E64B35FF"
+color_bars <- "#90B5CE" # color_bars <- "#4DBBD5FF" # for draft 6
+color_line <- "#345269" # color_line <- "#E64B35FF" # for draft 6
 
 my_plot <- 
     ggplot(data = data_4graph, 
@@ -75,7 +75,7 @@ my_plot <-
     scale_x_continuous(expand = c(0.025, 0)) +
     # set range on OY axes and adjust the distance (gap) from OX axes
     scale_y_continuous(sec.axis = sec_axis(trans = ~ . / my_factor, 
-                                           name = "Cumulative number of \n pollen limitation cases"),
+                                           name = "Cumulative number of\npollen limitation cases"),
                        limits = c(0, 75),
                        expand = c(0, 0)) +
     # set axis labels

@@ -2,7 +2,7 @@
 ## Phylogeny tree graph for pollen limitation dataset
 # /////////////////////////////////////////////////////////////////////////
 
-rm(list = ls()); gc(reset = TRUE)
+rm(list = ls(all.names = TRUE)); gc(reset = TRUE)
 
 # Load packages
 
@@ -56,7 +56,7 @@ data.table::setnames(Phylo_info, gsub("\\s+", "_", names(Phylo_info)))
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Read tree from Jana (received on Wednesday, January 10, 2018 12:20 AM)
-tree <- read.tree("Data/phylogeny/Aggre.tree_new.tre")
+tree <- ape::read.tree("Data/phylogeny/Aggre.tree_new.tre")
 tree$tip.label[1:5] # check formating of first 5 species names
 
 # Note that "Physocarpus_amurensis" "Silene_stockenii" are extra in the tree 
@@ -78,7 +78,7 @@ SiteTree <- ape::drop.tip(phy = tree,
 
 # Save updated tree
 write.tree(SiteTree, file = "Output/SiteTree_VS.tree")
-write.nexus(SiteTree, file = "Output/SiteTree_VS_nexus")
+write.nexus(SiteTree, file = "Output/SiteTree_VS_nexus.nex")
 
 # Merge tree tip labels with annotation data from Phylo_info;
 # "tip.label" column name needs to be used exactly as such (with this name).

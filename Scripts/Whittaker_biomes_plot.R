@@ -2,14 +2,14 @@
 ## Whittaker diagram for biomes and study locations.
 # /////////////////////////////////////////////////////////////////////////
 
-rm(list = ls()); gc(reset = TRUE)
+rm(list = ls(all.names = TRUE)); gc(reset = TRUE)
 
 # install.packages("devtools")
 # devtools::install_github("valentinitnelav/plotbiomes")
-# Check details at https://github.com/valentinitnelav/plotbiomes
 # `plotbiomes` package simulates the graph from Figure 5.5 in 
 # Ricklefs, R. E. (2008), The economy of nature. W. H. Freeman and Company. 
 # (Chapter 5, Biological Communities, The biome concept).
+# Check details at https://github.com/valentinitnelav/plotbiomes
 library(plotbiomes)
 library(ggplot2)
 library(data.table)
@@ -19,8 +19,9 @@ library(data.table)
 # Read & prepare data -----------------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Read temperature and precipitation data (extracted from CHELSA v1.2
+# http://chelsa-climate.org/; see the script Extract_temp_rainfall.R)
 my_dt <- fread("Output/cache/extractions_temp_pp.csv")
-str(my_dt) # unique_number should be character
 
 # Temperature needs to be divided by 10
 my_dt[, Annual_mean_temp_C := Annual_mean_temp_C/10]
@@ -28,9 +29,6 @@ my_dt[, Annual_mean_temp_C := Annual_mean_temp_C/10]
 my_dt[, Annual_pp_cm := Annual_pp_mm/10]
 # Delete column precipitation in mm
 my_dt[, Annual_pp_mm := NULL]
-
-# Can try using unique combinations of precipitation & temperature
-# my_dt <- unique(my_dt, by = c("Annual_mean_temp_C", "Annual_pp_cm"))
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,7 +54,6 @@ biomes_plot <- ggplot() +
     geom_point(data = my_dt, 
                aes(x = Annual_mean_temp_C, 
                    y = Annual_pp_cm),
-               # position = position_jitter(width = 0.1, height = 0.1),
                size   = 0.5,
                shape  = 1,
                colour = "black",
@@ -76,11 +73,13 @@ biomes_plot <- ggplot() +
         panel.grid.major = element_line(size = 0.3, 
                                         linetype = "longdash"),
         panel.grid.minor = element_blank(), # eliminate minor grids,
-        # set font family for all text within the plot ("sans" should work as "Arial")
+        # set font family for all text within the plot ("sans" should work as "Arial");
         # note that this can be overridden with other adjustment functions below
         text = element_text(family = "sans", size = 8),
-        legend.justification = c(0, 1),  # set the upper left corner of the legend box
-        legend.position = c(0.01, 0.99), # adjust the position of the corner as relative to axis
+        # set the upper left corner of the legend box
+        legend.justification = c(0, 1),  
+        # adjust the position of the corner as relative to axis
+        legend.position = c(0.01, 0.99), 
         # Set height of legend items (keys).
         legend.key.height = unit(3, "mm"),
         legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
@@ -94,17 +93,15 @@ biomes_plot <- ggplot() +
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Save to pdf and png file ------------------------------------------------
+# Save as pdf and png file ------------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
        filename = "Output/Whittaker_diagram_biomes_draf_5.pdf", 
        width    = 9, 
        height   = 7, 
        units    = "cm")
 
-set.seed(1) # for jittering each time in the same way
 ggsave(biomes_plot,
        filename = "Output/Whittaker_diagram_biomes_draf_5.png",
        width    = 9, 

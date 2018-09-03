@@ -1,8 +1,8 @@
 # /////////////////////////////////////////////////////////////////////////
-# Effect Size (ES) histograms for comparison purposes.
+# Effect Size (ES) histograms
 # /////////////////////////////////////////////////////////////////////////
 
-rm(list = ls()); gc(reset = TRUE)
+rm(list = ls(all.names = TRUE)); gc(reset = TRUE)
 
 
 library(data.table)
@@ -10,7 +10,6 @@ library(ggplot2)
 
 # Read ES table
 es_dt <- fread("Output/cache/master_es_multi_methods.csv")
-str(es_dt)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -31,11 +30,6 @@ quantile(es_dt$PL_Effect_Size_hedgesD,
 #            5%       95% 
 #     -1.293465 12.533562 
 
-# es_dt[, PL_Effect_Size_hedgesD := ifelse(PL_Effect_Size_hedgesD %between% c(-50, 50),
-#                                               yes = PL_Effect_Size_hedgesD,
-#                                               no = NA)]
-# hist(es_dt$PL_Effect_Size_hedgesD)
-
 es_melt_1 <- melt(es_dt[, .(PL_Effect_Size_lnRktoall_0.5,
                             PL_Effect_Size_hedgesD)])
 # The warning is ok
@@ -44,7 +38,7 @@ es_melt_1[, variable := factor(variable, labels = c("Log response ratio",
                                                     "Hedges' d"))]
 
 # Create a dummy data.frame to help with placing white horizontal lines at the
-# zero level to force-delete the default gray zero line in each panel. This
+# zero level to force-delete the default gray zero line in each panel. The
 # default line doesn’t allow the visual detection of very small frequencies at
 # big values when printing. The y values were discovered by try & error.
 dummy <- data.frame(variable = c("Log response ratio", "Hedges' d"), 
@@ -56,7 +50,7 @@ hist_1 <-
     geom_histogram(bins = 50, fill = "gray20") +
     facet_wrap(~ variable, scales = "free", ncol = 2) +
     labs(x = "Effect size", y = "Counts") +
-    # Plot a white line to “delete” the default zero gray line
+    # Draw a thin white horizontal line to “delete” the default zero gray line
     geom_hline(data = dummy,
                aes(yintercept = y),
                colour = "white",
@@ -76,7 +70,7 @@ hist_1 <-
                              "mm"))
 
 ggsave(hist_1,
-       file = "output/histo_lnR_vs_HedgeD_draft_3.pdf",
+       file = "Output/share/histo_lnR_vs_HedgeD_draft_3.pdf",
        units = "cm", width = 14, height = 7)
 
 
@@ -113,5 +107,5 @@ hist_2 <-
                              "mm"))
 
 ggsave(hist_2,
-       file = "output/histo_lnR_testing_constants_draft_1.pdf",
+       file = "output/share/histo_lnR_testing_constants_draft_1.pdf",
        units = "cm", width = 7, height = 14)

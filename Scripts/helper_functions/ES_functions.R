@@ -30,7 +30,7 @@
 #          - "hedgesD" - Hedges' d (known also as Hedges' g)
 
 get_ES <- function(x1, x2, n1, n2, sd1, sd2, k, method){
-    # Compute type of ES based on given method
+    # Compute the type of ES based on the given method
     ES <- switch( method,
                   # log response ratio, no constant
                   lnR = log(x1) - log(x2), # or log(x1/x2)
@@ -51,7 +51,7 @@ get_ES <- function(x1, x2, n1, n2, sd1, sd2, k, method){
 # Helper for Hedges'd -----------------------------------------------------
 
 # Computes Hedges' d (Hedges' g)
-# This function is a helper in get_ES()
+# This function is a helper in the get_ES() function above.
 .get_hedgesD <- function(x1, x2, n1, n2, sd1, sd2) {
     # mean difference
     dif <- x1 - x2 

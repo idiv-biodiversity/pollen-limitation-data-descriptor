@@ -1,38 +1,39 @@
 # /////////////////////////////////////////////////////////////////////////
-# Final clean-ups of the data that will be published.
+# Prepare GloPL dataset
 # /////////////////////////////////////////////////////////////////////////
 
-rm(list = ls()); gc(reset = TRUE)
+rm(list = ls(all.names = TRUE)); gc(reset = TRUE)
 
 library(data.table)
 
-# Read data
+
+# Read GloPL table
 GloPL <- fread("Data/GloPL_with_id_2_2_2018.csv", 
                colClasses = "character", 
                na.strings = c("NA","N/A","null", ""))
 
-# Read ES table
+# Read PL ES table
 ES <- fread("Output/cache/master_es_multi_methods.csv", 
             colClasses = "character")
 
-# Update "by reference" the raw data with ES computed based on log response
-# ratio with 0.5 added to zero cases.
+# Update "by reference" the raw data with the ES computed based on the log
+# response ratio with 0.5 added to zero cases.
 GloPL[ES, on = "unique_number", ":=" (
     PL_Effect_Size = PL_Effect_Size_lnRkto0_0.5,
     PL_Effect_Size_Type1 = PL_Effect_Size_Type1_lnRkto0_0.5,
     PL_Effect_Size_Type2 = PL_Effect_Size_Type2_lnRkto0_0.5
 )]
 
-# Indicate if the constant was added in the formula of log response ratio or not.
+# Indicate if the constant was added in the formula of the log response ratio.
 # Uses a lookup table to match cases and identifies columns to test for zeroes.
 # TRUE means that the constant was added.
 lookup <- fread("Output/cache/lookup_cols.csv")
 lookup
-# Example: if for a row in GloPL table, PL_Effect_Size_Type2 is Bagout and
-# PL_Effect_Size_Type1 is FS, then it will test if the values in the Bagout_X_FS
-# and Natural_X_FS columns are zero or not. If they are zero then a constant was
-# added when computing ES for log response ratio.
-# Use %in% operator instead of == to avoid NA cases.
+# Example: if for a row in GloPL table, PL_Effect_Size_Type2 is "Bagout" and
+# PL_Effect_Size_Type1 is "FS", then it will test if the values in the
+# Bagout_X_FS and Natural_X_FS columns are zero or not. If they are zero then a
+# constant was added when computing ES for log response ratio. Use %in% operator
+# instead of == to avoid NA cases.
 GloPL[lookup, on = .(PL_Effect_Size_Type1, PL_Effect_Size_Type2),
       Constant_added := get(col1.new) %in% 0 | get(col2.new) %in% 0]
 
@@ -40,7 +41,7 @@ GloPL[lookup, on = .(PL_Effect_Size_Type1, PL_Effect_Size_Type2),
 GloPL[, sum(Constant_added)] # 59
 
 
-# Replace _and_ with _&_ in Author column
+# Replace "_and_" with "_&_" in the Author column
 GloPL[grepl(pattern = '_and_', x = Author), 
       Author := gsub(pattern = "_and_", 
                      replacement = "_&_", 
@@ -71,5 +72,5 @@ GloPL[, Natural_N_FS := as.numeric(Natural_N_FS)]
 
 # save to csv file
 write.csv(GloPL,
-          file = "Output/share/GloPL_with_id_updated_ES.csv", 
+          file = "Output/GloPL_with_id_updated_ES.csv", 
           row.names = FALSE)

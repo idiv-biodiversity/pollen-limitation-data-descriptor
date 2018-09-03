@@ -1,25 +1,23 @@
 # /////////////////////////////////////////////////////////////////////////
-## Global map for pollen limitation dataset
+## Global map with pollen limitation studies
 # /////////////////////////////////////////////////////////////////////////
 
-rm(list = ls()); gc(reset = TRUE)
+rm(list = ls(all.names = TRUE)); gc(reset = TRUE)
 
-# List of packages for session (add here any new desired packages)
-.myPackages = c("rgdal", "sp", "data.table", "ggplot2", "mapview" ,"gplots")
-# Install CRAN packages (if not already installed)
-.inst <- .myPackages %in% installed.packages()
-if(length(.myPackages[!.inst]) > 0) install.packages(.myPackages[!.inst])
-# Load packages into session 
-sapply(.myPackages, require, character.only = TRUE)
+library(rgdal)
+library(sp)
+library(data.table)
+library(ggplot2)
+library(mapview)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Read & prepare data -----------------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Read data - is the output of Compute_ES.R script
-# Get only columns of interest
-ES_dt <- fread("Output/share/GloPL_with_id_updated_ES.csv", 
+# Read PL data (the output of the Prepare_data.R script). Select only the needed
+# columns.
+ES_dt <- fread("Output/GloPL_with_id_updated_ES.csv", 
                colClasses = "character",
                na.strings = c("NA","N/A","null", ""),
                select = c("unique_number", "Longitude", "Latitude"))
@@ -30,12 +28,10 @@ ES_dt[, lon := as.numeric(Longitude)]
 # Transform latitude to numeric
 ES_dt[, lat := as.numeric(Latitude)]
 
-# Some routine checking of coordinates values
+# Are the coordinates within expected ranges?
 range(ES_dt[,lon]) %between% c(-180, 180)
 range(ES_dt[,lat]) %between% c(-90, 90)
 
-# Get unique pairs of coordinates
-# ES_dt_unq <- unique(ES_dt, by = c("lon", "lat"))
 
 # Transform unprojected long-lat in Robinson coordinates
 ES_dt[, c("X.prj","Y.prj") := data.table(rgdal::project(xy   = cbind(lon, lat),
@@ -43,12 +39,12 @@ ES_dt[, c("X.prj","Y.prj") := data.table(rgdal::project(xy   = cbind(lon, lat),
 # "+init=ESRI:54030" same as "+proj=robin"
 
 # Check points with interactive map
-points_WGS84 <- sp::SpatialPointsDataFrame(coords      = ES_dt[,.(lon,lat)], # order matters
+points_WGS84 <- sp::SpatialPointsDataFrame(coords      = ES_dt[,.(lon, lat)], # order matters
                                            data        = ES_dt[,.(unique_number)], 
                                            proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-my_html_map <- mapview(points_WGS84)
+html_map <- mapview(points_WGS84)
 # save as html
-# mapshot(my_html_map, url = "Global_map_ES_categ_html.html")
+mapshot(html_map, url = "Global_map.html")
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -66,24 +62,22 @@ NE_countries_rob  <- spTransform(NE_countries, CRS("+proj=robin"))
 NE_graticules_rob <- spTransform(NE_graticules, CRS("+proj=robin"))
 NE_box_rob        <- spTransform(NE_box, CRS("+proj=robin"))
 
-# Shift longitude of OX graticule labales. 
-# This was needed because for example 160dg label ended up 
-# on the 180 longitude line when projecting to Robinson.
-# For each degree in the vector 
-seq(from = 160, to = 0, by = -20)
-# apply the corersponding shift from below 
+# Shift longitude of OX graticule labales. This was needed because, for example,
+# the 160 dg label ended up on the 180 longitude line when projecting to
+# Robinson. A shift is applied for each degree in the sequence 
+# seq(from = 160, to = 0, by = -20)
 shift <- c(10, 10, 9, 8, 8, 5, 2, 0, 0)
-lbl.X[, shift := rep(c(shift, -rev(shift)[-1]),2)]
+lbl.X[, shift := rep(c(shift, -rev(shift)[-1]), 2)]
 lbl.X
 lbl.X[, lon := lon - shift] # apply shift
 lbl.X[, shift := NULL] # delete column
 
-# Project labales for graticules to Robinson
+# Project the labales for graticules to Robinson
 lbl.Y[, c("X.prj","Y.prj") := data.table(rgdal::project(xy   = cbind(lon, lat),
                                                         proj = "+proj=robin"))]
 lbl.X[, c("X.prj","Y.prj") := data.table(rgdal::project(xy   = cbind(lon, lat),
                                                         proj = "+proj=robin"))]
-# Create helper columns with nudged coordinates for plotting graticule labales
+# Create helper columns with nudged coordinates for plotting graticule labeles.
 # For lbl.Y nudge longitude and for lbl.X nudge latitude.
 # Give nudge values in dg (if you change, re-run also the projection lines above)
 my_nudge <- cbind(nudge_lon = 10, 
@@ -101,9 +95,9 @@ lbl.X[, Y.prj := ifelse(lat < 0,
 # Plot map ----------------------------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# ... Prepare simple map --------------------------------------------------
+# ... Prepare base map ----------------------------------------------------
 
-my_base_map <- 
+base_map <- 
     ggplot() +
     # ___ add graticules projected to Robinson
     geom_path(data = NE_graticules_rob, 
@@ -139,10 +133,10 @@ my_base_map <-
                  aes(x = long, 
                      y = lat), 
                  colour ="black", 
-                 fill   ="transparent", # try also "lightblue" but add a separate polygon as first layer
+                 fill   ="transparent", 
                  size   = 0.2) +
-    # "Regions defined for each Polygons" warning has to do with fortify transformation. 
-    # Might get deprecated in future!
+    # "Regions defined for each Polygons" warning has to do with fortify
+    # transformation. Might get deprecated in future.
     # ___ the default ratio = 1 in coord_fixed ensures that one unit on the x-axis 
     # is the same length as one unit on the y-axis
     coord_fixed(ratio = 1) +
@@ -152,7 +146,7 @@ my_base_map <-
 
 # ... Add study locations (points) ----------------------------------------
 
-my_map_ES_categ <- my_base_map +
+glopl_map <- base_map +
     # ___ add the XY points
     geom_point(data = ES_dt, 
                aes(x = X.prj, 
@@ -177,8 +171,20 @@ my_map_ES_categ <- my_base_map +
         plot.margin = unit(c(t = 0, r = 0.8, b = 0, l = -0.5), "cm")
     )
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_11.pdf", 
-       width = 14, height = 7, units = "cm")
 
-ggsave(plot = my_map_ES_categ, filename = "Output/Global_map_draft_11.png", 
-       width = 14, height = 7, units = "cm", dpi = 1000)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Save as pdf and png file ------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggsave(plot = glopl_map, 
+       filename = "Output/Global_map_draft_11.pdf", 
+       width = 14, 
+       height = 7, 
+       units = "cm")
+
+ggsave(plot = glopl_map, 
+       filename = "Output/Global_map_draft_11.png", 
+       width = 14, 
+       height = 7, 
+       units = "cm", 
+       dpi = 1000)

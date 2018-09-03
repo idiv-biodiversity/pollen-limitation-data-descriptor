@@ -8,6 +8,7 @@ You can [download][1] or clone the repository then run the scripts using the `Gl
 
 You can find further information about the scripts in the README file associated with the [scripts folder][4].
 
+The folder `Session-info` stores information about the R packages and their versions.
 
 [1]: https://github.com/idiv-biodiversity/pollen-limitation-data-descriptor/archive/master.zip
 [2]: https://www.r-project.org/

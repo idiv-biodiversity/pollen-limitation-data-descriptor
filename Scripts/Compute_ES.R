@@ -5,28 +5,28 @@
 # correspondence between the column names.
 # /////////////////////////////////////////////////////////////////////////
 
-rm(list = ls()); gc(reset = TRUE)
+rm(list = ls(all.names = TRUE)); gc(reset = TRUE)
 
 library(data.table)
 
 # Source functions that apply ES formulae.
-source("scripts/ES_functions.R")
+source("scripts/helper_functions/ES_functions.R")
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Read & prepare data -----------------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Read PL raw data. Treat all values as character. 
+# Read pollen limitation (PL) raw data. Treat all values as character. 
 # Also convert to NA everything that is:
-# "NA", "N/A", "null", "" (last one is treated as blank in Excel).
+# "NA", "N/A", "null", "" (the last one is treated as blank in Excel).
 PL_dt <- fread("Data/GloPL_with_id_2_2_2018.csv", 
                colClasses = "character", 
                na.strings = c("NA","N/A","null", ""))
 
-# There is the need switching between two versions of columns names because a
-# new set of names was used for the final dataset (that will end up published).
-# A lookup table can be used from the metadata file below.
+# There is the need of switching between two versions of columns names because a
+# new set of names was used for the final dataset. A lookup table can be used
+# from the metadata file below.
 
 # Read meta_data (all columns as character)
 meta_dt <- fread(file = "Data/Meta_data_24_01.csv", 
@@ -44,8 +44,7 @@ new_names <- meta_dt$Variable.within.GloPL.database # names as will be published
 setdiff(names(PL_dt), new_names)
 # "unique_number", "unique_study_number", "Species_Author" are extra in PL_dt,
 # which is ok
-setdiff(new_names, names(PL_dt))
-# all good if "character(0)"
+setdiff(new_names, names(PL_dt)) # all good if "character(0)"
 
 # Switch names
 setnames(PL_dt, 
@@ -56,56 +55,59 @@ rm(meta_dt, new_names, old_names)
 
 # Transform desired columns to numeric type. 
 # These are the columns that are used for ES computations.
-cols_to_numeric_4ES <- c(
-    "supp_X_fruitset_JSJEB",
-    "supp_SD_fruitset_JSJEB",
-    "supp_N_fruitset_JSJEB",
-    "open_X_fruitset_JSJEB",
-    "open_SD_fruitset_JSJEB",
-    "open_N_fruitset_JSJEB",
-    "bagout_X_fruitset_JSJEB",
-    "bagout_SD_fruitset_JSJEB",
-    "bagout_N_fruitset_JSJEB",
-    "supp_X_seeds_per_ovule_Corrected_JR",
-    "supp_SD_seeds_per_ovule_Corrected_JR",
-    "supp_N_seeds_per_ovule_Corrected_JR",
-    "open_X_seeds_per_ovule_Corrected_JR",
-    "open_SD_seeds_per_ovule_Corrected_JR",
-    "open_N_seeds_per_ovule_Corrected_JR",
-    "bagout_X_seeds_per_ovule_Corrected_JR",
-    "bagout_SD_seeds_per_ovule_Corrected_JR",
-    "bagout_N_seeds_per_ovule_Corrected_JR",
-    "supp_X_SPFR_Author",
-    "supp_SD_SPFR_Author",
-    "supp_N_SPFR_Author",
-    "open_X_SPFR_Author",
-    "open_SD_SPFR_Author",
-    "open_N_SPFR_Author",
-    "bagout_X_SPFR_Author",
-    "bagout_SD_SPFR_Author",
-    "bagout_N_SPFR_Author",
-    "supp_X_SPFL_Author",
-    "supp_SD_SPFL_Author",
-    "supp_N_SPFL_Author",
-    "open_X_SPFL_Author",
-    "open_SD_SPFL_Author",
-    "open_N_SPFL_Author",
-    "bagout_X_SPFL_Author",
-    "bagout_SD_SPFL_Author",
-    "bagout_N_SPFL_Author",
-    "supp_X_SPP_Author",
-    "supp_SD_SPP_Author",
-    "supp_N_SPP_Author",
-    "open_X_SPP_Author",
-    "open_SD_SPP_Author",
-    "open_N_SPP_Author",
-    "bagout_X_SPP_Author",
-    "bagout_SD_SPP_Author",
-    'bagout_N_SPP_Author'
-)
+cols_to_numeric_4ES <- 
+    c(
+        "supp_X_fruitset_JSJEB",
+        "supp_SD_fruitset_JSJEB",
+        "supp_N_fruitset_JSJEB",
+        "open_X_fruitset_JSJEB",
+        "open_SD_fruitset_JSJEB",
+        "open_N_fruitset_JSJEB",
+        "bagout_X_fruitset_JSJEB",
+        "bagout_SD_fruitset_JSJEB",
+        "bagout_N_fruitset_JSJEB",
+        "supp_X_seeds_per_ovule_Corrected_JR",
+        "supp_SD_seeds_per_ovule_Corrected_JR",
+        "supp_N_seeds_per_ovule_Corrected_JR",
+        "open_X_seeds_per_ovule_Corrected_JR",
+        "open_SD_seeds_per_ovule_Corrected_JR",
+        "open_N_seeds_per_ovule_Corrected_JR",
+        "bagout_X_seeds_per_ovule_Corrected_JR",
+        "bagout_SD_seeds_per_ovule_Corrected_JR",
+        "bagout_N_seeds_per_ovule_Corrected_JR",
+        "supp_X_SPFR_Author",
+        "supp_SD_SPFR_Author",
+        "supp_N_SPFR_Author",
+        "open_X_SPFR_Author",
+        "open_SD_SPFR_Author",
+        "open_N_SPFR_Author",
+        "bagout_X_SPFR_Author",
+        "bagout_SD_SPFR_Author",
+        "bagout_N_SPFR_Author",
+        "supp_X_SPFL_Author",
+        "supp_SD_SPFL_Author",
+        "supp_N_SPFL_Author",
+        "open_X_SPFL_Author",
+        "open_SD_SPFL_Author",
+        "open_N_SPFL_Author",
+        "bagout_X_SPFL_Author",
+        "bagout_SD_SPFL_Author",
+        "bagout_N_SPFL_Author",
+        "supp_X_SPP_Author",
+        "supp_SD_SPP_Author",
+        "supp_N_SPP_Author",
+        "open_X_SPP_Author",
+        "open_SD_SPP_Author",
+        "open_N_SPP_Author",
+        "bagout_X_SPP_Author",
+        "bagout_SD_SPP_Author",
+        'bagout_N_SPP_Author'
+    )
 
 # Check cases where conversion to numeric encounters characters that yield NA-s.
-# This helps to check for legitimate conversions
+# This helps to check for legitimate conversions. Search across columns and
+# display the unique_number values together with the non-numeric values that
+# yield NA-s.
 test <- PL_dt[, lapply(.SD, function(col) is.na(as.numeric(col)) != is.na(col)), 
               .SDcols = cols_to_numeric_4ES]
 for (col in cols_to_numeric_4ES[ test[, colSums(.SD) > 0] ]){
@@ -119,9 +121,9 @@ for (col in cols_to_numeric_4ES[ test[, colSums(.SD) > 0] ]){
 # 3:          2268 need_to_contact_author_for_data;_paper_presents_PLI_(1-open/cross)
 # 4:          2269 need_to_contact_author_for_data;_paper_presents_PLI_(1-open/cross)
 #
-# These represent legitimate conversions to NA (something like "45?" would need
-# checking)
-rm(test, col)
+# These represent legitimate conversions to NA
+
+rm(test, col) # remove objects
 
 # Safely transform columns to numeric mode.
 # The "NAs introduced by coercion" message refers to the cases mentioned above.
@@ -146,13 +148,14 @@ mk[, m := as.character(m)]
 mk[, names := ifelse(k != 0, paste(m, k, sep = "_"), m)]
 mk
 
-# Define a list that will contain tables with ES results for each method
+# Define a list that will contain tables with ES results for each combination of
+# methods and constants.
 dt_list <- vector(mode = "list", length = nrow(mk))
 names(dt_list) <- mk$names
 
 # Make a copy of the columns that enter the ES computation
 dt <- PL_dt[, cols_to_numeric_4ES, with = FALSE]
-# For each method, compute ES and store results in a list of data tables
+# For each combination, compute ES and store results in a list of data tables.
 # E.g. – the ES results for Hedge’s d will be stored in the list at
 # dt_list$hedgesD
 for (i in 1:nrow(mk)){
@@ -225,12 +228,14 @@ rm(dt, i, k_vect, mk)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Sup vs Bagout ES --------------------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Choose "Sup" or "Bagout" effect sizes (ES). Give priority to "Sup" ES.
-# If "Sup" ES values are NA, then take "Bagout" ES
-# If both "Sup" and "Bagout" ES values are present, then take "Sup"
-# Create a character column that specifies what treatment was used - "Sup" or "Bagout"
+# "Sup"    = unbagged, supplemental hand pollination treatment,
+# "Bagout" = bagged, outcrossed hand pollination treatment.
+# Choose "Sup" or "Bagout" effect sizes (ES). Give priority to "Sup" ES. That
+# is, if "Sup" ES values are NA, then take "Bagout" ES. If both "Sup" and
+# "Bagout" ES values are present, then take "Sup". Create a character column
+# that specifies what treatment was used - "Sup" or "Bagout".
 
-# In each data.table in dt_list compute the following columns:
+# In each data.table from dt_list compute the following columns:
 for (i in 1:length(dt_list)){
     dt_list[[i]][, ":=" (
         # _____ Fruitset _____ #
@@ -278,14 +283,14 @@ for (i in 1:length(dt_list)){
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Construct ES master columns ---------------------------------------------
+# Construct ES "master" columns -------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# In each data.table in dt_list compute the following columns:
+# In each data.table from dt_list compute the following columns:
 for (i in 1:length(dt_list)){
     dt_list[[i]][, ":=" (
-        # Create "Master" Effect Size (ES) column
-        # fallow the order: SPP, SPFL, SPFR, FS (Fruitset), SO (Seedset/Seeds per ovule)
+        # Create "Master" Effect Size (ES) column.
+        # Fallow the order: SPP, SPFL, SPFR, FS (Fruitset), SO (Seedset/Seeds per ovule).
         PL_Effect_Size = 
             ifelse(
                 !is.na(ES_SPP_Sup_Bagout.VS),
@@ -315,7 +320,7 @@ for (i in 1:length(dt_list)){
                 )
             ),
         # Create a column that gives the corresponding measure name 
-        # for the value in ES_mst.VS above
+        # for the value in ES_mst.VS above.
         PL_Effect_Size_Type1 = 
             ifelse(
                 !is.na(ES_SPP_Sup_Bagout.VS),
@@ -366,7 +371,8 @@ for (i in 1:length(dt_list)){
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Results preparation -----------------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Save a table with master ES from different methods.
+# Save a table with "master" ES columns from different combination of methods
+# and constants.
 
 cols2keep_master <- c("PL_Effect_Size",
                       "PL_Effect_Size_Type1",
@@ -375,7 +381,7 @@ cols2keep_master <- c("PL_Effect_Size",
 for (i in 1:length(dt_list)) {
     # From each table delete all other columns different from those in cols2keep_master
     dt_list[[i]][, setdiff(names(dt_list[[i]]), cols2keep_master) := NULL]
-    # Add prefix with the method to column names
+    # Add a suffix with the combination of method and constant to column names.
     setnames( dt_list[[i]],
               paste(names(dt_list[[i]]),
                     names(dt_list)[i],
@@ -383,7 +389,7 @@ for (i in 1:length(dt_list)) {
 }
 
 # cbind ES tables
-# Must remove list names, otherwise they are passed in the column names
+# Must remove list names, otherwise they are passed in the column names.
 names(dt_list) <- NULL 
 ES_dt <- do.call("cbind", dt_list)
 # Add also the unique_number column (helpful for backtracking) 

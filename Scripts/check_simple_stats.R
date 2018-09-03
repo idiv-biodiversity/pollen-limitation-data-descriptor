@@ -1,21 +1,20 @@
 # /////////////////////////////////////////////////////////////////////////
-## Script to check some stats and values.
+## Script to check some simple descriptive statistics and run ANOVA of the
+## effect size explained by the level of supplementation.
 # /////////////////////////////////////////////////////////////////////////
 
-rm(list = ls()); gc(reset = TRUE)
+rm(list = ls(all.names = TRUE)); gc(reset = TRUE)
 
 library(data.table)
-library(readxl)
+
 
 # The hack with the setting of the working directory below is important only if
-# compiling this script as HTML report
+# compiling this script as HTML report.
 setwd(gsub(pattern = '/Scripts', replacement = '', x = getwd()))
 
 
-# read merged PL data
-pl_dt <- fread("output/share/GloPL_with_id_updated_ES.csv")
-# str(pl_dt)
-
+# Read merged PL data
+pl_dt <- fread("output/GloPL_with_id_updated_ES.csv")
 
 # Number of unique studies 
 length(unique(pl_dt$unique_study_number))
@@ -33,8 +32,7 @@ length(unique(pl_dt$Family))
 
 # Number of orders 
 # Check file Data/phylogeny/Phylogeny information_VS.xlsx
-order_dt <- read_excel(path  = "Data/phylogeny/Phylogeny information_VS.xlsx", 
-                       sheet = 1)
+order_dt <- read.csv("Data/phylogeny/Phylogeny_annotation.csv")
 length(unique(order_dt$order))
 # [1] 45
 
@@ -42,17 +40,18 @@ length(unique(order_dt$order))
 my_tbl <- table(pl_dt$PL_Effect_Size_Type2)
 my_tbl
 # Bagout    Sup 
-# 916   2053 
+#    916   2053 
 prop.table(as.matrix(my_tbl), margin = 2)
 # Bagout 0.3085214
 # Sup    0.6914786
+
 
 # Run ANOVA on Level_of_Supplementation with ES values
 pl4anova <- pl_dt[,.(Level_of_Supplementation, PL_Effect_Size)]
 # Note that there are some NA-s in Level_of_Supplementation column
 pl_dt[is.na(Level_of_Supplementation), .N]
-# 37 NA-s
-# Remove rows that have NA-s for ANOVA analysis
+# 7 NA-s
+# Remove rows that have NA-s
 pl4anova <- pl4anova[complete.cases(pl4anova)]
 
 pl4anova[, PL_Effect_Size := as.numeric(PL_Effect_Size)]
@@ -64,7 +63,8 @@ aov.model <- aov(PL_Effect_Size ~ Level_of_Supplementation, data = pl4anova)
 summary(aov.model)
 TukeyHSD(aov.model)
 
+# Plot Tukey Honest Significant Differences
 # Adjust margins of plotting region (Bottom, Left, Top, Right)
 par(mai = c(1,2.5,1,0.5))
 plot(TukeyHSD(aov.model), las=2)
-# dev.off()
+dev.off()

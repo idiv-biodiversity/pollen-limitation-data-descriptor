@@ -1,0 +1,13 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+*.html
+
+archive
+Data
+Literature
+log
+Output
+Scripts/extra

@@ -1,26 +1,27 @@
-# Running scripts respects a certain order
+# The order of running the scripts matters
 
 1. Prepare data and compute Effect Sizes (ES) 
-2. Make graphs
+2. Create figures
 
 ## 1) Prepare data and compute Effect Sizes (ES)
 
 ### 1.1 Run `Compute_ES.R`
 
-No aggregation takes place, just computing ES using several methods.
-Several ways of computing ES were tested. Results are saved at `Output/cache/master_es_multi_methods.csv`.
+Computing ES for each record using several methods.
 
-No need to run the helper script `ES_functions.R` which contains the helper ES functions. The helpers are run on the fly when executing `Compute_ES.R`.
+### 1.2 Run `Prepare_data.R`
 
-### 1.2 Run `prepare_data.R`
+This script produces the cleaned version of the GloPL data, which is further used for making the figures.
 
-This script produces the cleaned version of the GloPL data, which is further used for making the graphs.
+### Simple descriptive statistics and ES ANOVA (optional)
+
+Run the `Check_simple_stats.R` script to check some simple descriptive statistics and run ANOVA on the effect size explained by the level of supplementation.
 
 
-## 2) Make graphs
-The order of script execution is not an issue this time, with the exception that before executing `Whittaker_biomes_plot.R` one must run `Extract_temp_rainfall.R`.
+## 2) Create figures
+The order of running the scripts is not an issue this time, with the exception that before executing `Whittaker_biomes_plot.R` one must run `Extract_temp_rainfall.R`.
 
-### Whittaker biomes graph
+### Whittaker biomes
 PL records are placed within the Whittaker biomes polygons based on their temperature-precipitation pairs.
 
 See `Whittaker_biomes_plot.R` script and the helper script `Extract_temp_rainfall.R`. The helper script must be run before making the graph, since `Whittaker_biomes_plot.R` relays on the temperature-precipitation raster extractions.
@@ -34,11 +35,8 @@ These extractions together with the digitized biome polygons were used for const
 ### Global map with study locations
 See `Global_map_pollen_lim.R` script.
 
-### Phylogenetic tree graph
+### Phylogenetic tree
 See `Phylogeny_graph.R` script.
 
-### Publication frequencies graph
-See `publication_frequencies.R` script.
-
-### Simple stats and ANOVA (optional)
-See `check_simple_stats.R` script. 
+### Publication frequencies across time
+See `Publication_frequencies.R` script.

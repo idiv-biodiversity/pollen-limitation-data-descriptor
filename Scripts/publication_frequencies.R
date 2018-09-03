@@ -1,11 +1,8 @@
 # /////////////////////////////////////////////////////////////////////////
-## Script for publication frequencies graph:
-## "Figure 1. Distribution of year of publication for studies measuring pollen 
-## limitation of plant reproduction included in the GloPL data base."
-## Title extracted from draft PLDataPaper7_6_2017_GAG_JHB_WD_jcv.docx
+## Script for making the figure of publication frequencies across time.
 # /////////////////////////////////////////////////////////////////////////
 
-rm(list = ls()); gc(reset = TRUE)
+rm(list = ls(all.names = TRUE)); gc(reset = TRUE)
 
 library(data.table)
 library(ggplot2)
@@ -17,10 +14,11 @@ library(scales)
 # Read & prepare data -----------------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Read PL data. Treat all values as character. 
-# Also convert to NA everything that is:
-# "NA", "N/A", "null", "" (last one is treated as blank in Excel).
-pl_dt <- fread("Output/share/GloPL_with_id_updated_ES.csv", 
+# Read PL data (the output of the Prepare_data.R script). Select only the needed
+# columns.
+# Read PL data. Treat all values as character. Also convert to NA everything
+# that is: "NA", "N/A", "null", "" (last one is treated as blank in Excel).
+pl_dt <- fread("Output/GloPL_with_id_updated_ES.csv", 
                colClasses = "character",
                na.strings = c("NA","N/A","null", ""),
                select = c("unique_number", "unique_study_number", "Year"))
@@ -39,7 +37,10 @@ setorder(data_4graph, Year)
 data_4graph[, N_cumul_studies := cumsum(N_studies)]
 
 # Note that summing up N_publications will give less than 
-# pl_dt[, uniqueN(unique_study_number)] because publications without year were removed
+# pl_dt[, uniqueN(unique_study_number)] 
+# because publications without year were removed
+
+# Save intermediary results.
 write.csv(data_4graph,
           "Output/cache/table_for_publication_freq_graph_ok.csv",
           row.names = FALSE)
@@ -49,20 +50,21 @@ write.csv(data_4graph,
 # Plot --------------------------------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Set 2nd scale "multiplication" factor
+# Set second scale's "multiplication" factor.
 my_factor <- 0.02
-# it should be in the range of the ratio of max value on left OY 
-# divided by max values of the right OY (2nd axis)
+# It should be in the range of the ratio of max value on left OY divided by the
+# max values of the right OY (2nd axis). In this case:
 max(data_4graph$N_publications)/max(data_4graph$N_cumul_studies)
 
 # Experiment with color
-mypal = ggsci::pal_npg("nrc", alpha = 1)(2)
+mypal <- ggsci::pal_npg("nrc", alpha = 1)(2)
 scales::show_col(mypal); mypal
 
-color_bars <- "#90B5CE" # color_bars <- "#4DBBD5FF" # for draft 6
-color_line <- "#345269" # color_line <- "#E64B35FF" # for draft 6
+color_bars <- "#4DBBD5FF"
+color_line <- "#E64B35FF"
 
-my_plot <- 
+
+pub_freq_plot <- 
     ggplot(data = data_4graph, 
            aes(x = Year)) +
     geom_bar(aes(y = N_publications), 
@@ -109,20 +111,30 @@ my_plot <-
                            "mm")
     )
 
-# save graph
-ggsave(plot = my_plot,
-       filename = "Output/Publication_freq_draft_10.pdf", 
-       width = 9, height = 5.5, units = "cm")
 
-ggsave(plot = my_plot,
-       filename = "Output/Publication_freq_draft_10.png", 
-       width = 9, height = 5.5, units = "cm", dpi = 1000)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Save as pdf and png file ------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ggsave(plot = pub_freq_plot,
+       filename = "Output/Publication_freq_draft_6.pdf", 
+       width = 9, 
+       height = 5.5, 
+       units = "cm")
+
+ggsave(plot = pub_freq_plot,
+       filename = "Output/Publication_freq_draft_6.png", 
+       width = 9, 
+       height = 5.5, 
+       units = "cm", 
+       dpi = 1000)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # References --------------------------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# References for secondary OY axis with ggplot2:
+
 # https://rpubs.com/MarkusLoew/226759
 # https://whatalnk.github.io/r-tips/ggplot2-secondary-y-axis.nb.html
-# using the grob approach: http://rpubs.com/kohske/dual_axis_in_ggplot2

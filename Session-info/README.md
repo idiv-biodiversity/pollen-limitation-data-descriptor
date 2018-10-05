@@ -10,10 +10,14 @@ The [versions][3] package might be a more flexible options for Windows users bec
 
 Here is an example for installing the `MASS` package, version `7.3-47`.
 ```{r}
+# Install the package 'versions' from CRAN (version 0.3, published on 2016-09-01)
 install.packages('versions')
 library(versions)
+# Create the directory 'lib' in 'Session-info', where the specific version of each package can be installed.
 if(!dir.exists("Session-info/lib/")) dir.create("Session-info/lib/")
 install.versions(pkgs = "MASS", versions = "7.3-47", lib = "Session-info/lib/")
+# Load the package from given location
+library(MASS, lib.loc = paste0(getwd(), "/Session-info/lib"))
 ```
 
 [1]: https://github.com/valentinitnelav/plotbiomes

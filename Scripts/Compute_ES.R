@@ -1,13 +1,17 @@
 # /////////////////////////////////////////////////////////////////////////
-# Script to compute pollen limitation effect sizes (ES) with various methods.
-# Note that there is the need of switching between two versions of columns
-# names. There is a metadata file that contains a lookup table with the
-# correspondence between the column names.
+#
+# Script to compute pollen limitation effect sizes (ES) with various methods. It
+# saves results in the  intermediary master_es_multi_methods.csv file that is
+# used further in Prepare_data.R to updated the GloPL with the desired ES
+# columns.
+#
 # /////////////////////////////////////////////////////////////////////////
 
-rm(list = ls(all.names = TRUE)); gc(reset = TRUE)
 
 library(data.table)
+
+# Cleans environment, including hidden objects (which begin with a .)
+rm(list = ls(all.names = TRUE))
 
 # Source functions that apply ES formulae.
 source("scripts/helper_functions/ES_functions.R")
@@ -17,104 +21,73 @@ source("scripts/helper_functions/ES_functions.R")
 # Read & prepare data -----------------------------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Read pollen limitation (PL) raw data. Treat all values as character. 
-# Also convert to NA everything that is:
-# "NA", "N/A", "null", "" (the last one is treated as blank in Excel).
-PL_dt <- fread("Data/GloPL_with_id_2_2_2018.csv", 
-               colClasses = "character", 
-               na.strings = c("NA","N/A","null", ""))
-
-# There is the need of switching between two versions of columns names because a
-# new set of names was used for the final dataset. A lookup table can be used
-# from the metadata file below.
-
-# Read meta_data (all columns as character)
-meta_dt <- fread(file = "Data/Meta_data_24_01.csv", 
-                 colClasses = "character")
-# Delete any quotation symbol from column names
-setnames(meta_dt, gsub("'", "", names(meta_dt)))
-# Replace spaces with dots in column names
-setnames(meta_dt, gsub(" ", ".", names(meta_dt)))
-
-old_names <- meta_dt$Current.Column.Name
-new_names <- meta_dt$Variable.within.GloPL.database # names as will be published
-
-# Check if new_names can be found within the current column names; 
-# check differences.
-setdiff(names(PL_dt), new_names)
-# "unique_number", "unique_study_number", "Species_Author" are extra in PL_dt,
-# which is ok
-setdiff(new_names, names(PL_dt)) # all good if "character(0)"
-
-# Switch names
-setnames(PL_dt, 
-         old = new_names, 
-         new = old_names)
-rm(meta_dt, new_names, old_names)
+# Read pollen limitation (GloPL) raw data. Treat all values as character.
+# Appropriate data type conversions will be done next.
+GloPL <- fread("Data/GloPL_with_id.csv", colClasses = "character")
 
 
 # Transform desired columns to numeric type. 
 # These are the columns that are used for ES computations.
 cols_to_numeric_4ES <- 
     c(
-        "supp_X_fruitset_JSJEB",
-        "supp_SD_fruitset_JSJEB",
-        "supp_N_fruitset_JSJEB",
-        "open_X_fruitset_JSJEB",
-        "open_SD_fruitset_JSJEB",
-        "open_N_fruitset_JSJEB",
-        "bagout_X_fruitset_JSJEB",
-        "bagout_SD_fruitset_JSJEB",
-        "bagout_N_fruitset_JSJEB",
-        "supp_X_seeds_per_ovule_Corrected_JR",
-        "supp_SD_seeds_per_ovule_Corrected_JR",
-        "supp_N_seeds_per_ovule_Corrected_JR",
-        "open_X_seeds_per_ovule_Corrected_JR",
-        "open_SD_seeds_per_ovule_Corrected_JR",
-        "open_N_seeds_per_ovule_Corrected_JR",
-        "bagout_X_seeds_per_ovule_Corrected_JR",
-        "bagout_SD_seeds_per_ovule_Corrected_JR",
-        "bagout_N_seeds_per_ovule_Corrected_JR",
-        "supp_X_SPFR_Author",
-        "supp_SD_SPFR_Author",
-        "supp_N_SPFR_Author",
-        "open_X_SPFR_Author",
-        "open_SD_SPFR_Author",
-        "open_N_SPFR_Author",
-        "bagout_X_SPFR_Author",
-        "bagout_SD_SPFR_Author",
-        "bagout_N_SPFR_Author",
-        "supp_X_SPFL_Author",
-        "supp_SD_SPFL_Author",
-        "supp_N_SPFL_Author",
-        "open_X_SPFL_Author",
-        "open_SD_SPFL_Author",
-        "open_N_SPFL_Author",
-        "bagout_X_SPFL_Author",
-        "bagout_SD_SPFL_Author",
-        "bagout_N_SPFL_Author",
-        "supp_X_SPP_Author",
-        "supp_SD_SPP_Author",
-        "supp_N_SPP_Author",
-        "open_X_SPP_Author",
-        "open_SD_SPP_Author",
-        "open_N_SPP_Author",
-        "bagout_X_SPP_Author",
-        "bagout_SD_SPP_Author",
-        'bagout_N_SPP_Author'
+        "Sup_X_FS",
+        "Sup_SD_FS",
+        "Sup_N_FS",
+        "Natural_X_FS",
+        "Natural_SD_FS",
+        "Natural_N_FS",
+        "Bagout_X_FS",
+        "Bagout_SD_FS",
+        "Bagout_N_FS",
+        "Sup_X_SO",
+        "Sup_SD_SO",
+        "Sup_N_SO",
+        "Natural_X_SO",
+        "Natural_SD_SO",
+        "Natural_N_SO",
+        "Bagout_X_SO",
+        "Bagout_SD_SO",
+        "Bagout_N_SO",
+        "Sup_X_SPFR",
+        "Sup_SD_SPFR",
+        "Sup_N_SPFR",
+        "Natural_X_SPFR",
+        "Natural_SD_SPFR",
+        "Natural_N_SPFR",
+        "Bagout_X_SPFR",
+        "Bagout_SD_SPFR",
+        "Bagout_N_SPFR",
+        "Sup_X_SPFL",
+        "Sup_SD_SPFL",
+        "Sup_N_SPFL",
+        "Natural_X_SPFL",
+        "Natural_SD_SPFL",
+        "Natural_N_SPFL",
+        "Bagout_X_SPFL",
+        "Bagout_SD_SPFL",
+        "Bagout_N_SPFL",
+        "Sup_X_SPP",
+        "Sup_SD_SPP",
+        "Sup_N_SPP",
+        "Natural_X_SPP",
+        "Natural_SD_SPP",
+        "Natural_N_SPP",
+        "Bagout_X_SPP",
+        "Bagout_SD_SPP",
+        'Bagout_N_SPP'
     )
 
 # Check cases where conversion to numeric encounters characters that yield NA-s.
 # This helps to check for legitimate conversions. Search across columns and
 # display the unique_number values together with the non-numeric values that
 # yield NA-s.
-test <- PL_dt[, lapply(.SD, function(col) is.na(as.numeric(col)) != is.na(col)), 
+test <- GloPL[, lapply(.SD, function(col) is.na(as.numeric(col)) != is.na(col)), 
               .SDcols = cols_to_numeric_4ES]
 for (col in cols_to_numeric_4ES[ test[, colSums(.SD) > 0] ]){
     print(col)
-    print(PL_dt[test[, get(col)], .(unique_number,  get(col))])
+    print(GloPL[test[, get(col)], .(unique_number,  get(col))])
 }
-# [1] "open_N_fruitset_JSJEB"
+# [1] "Natural_N_FS"
 #    unique_number                                                                 V2
 # 1:          2264 need_to_contact_author_for_data;_paper_presents_PLI_(1-open/cross)
 # 2:          2265 need_to_contact_author_for_data;_paper_presents_PLI_(1-open/cross)
@@ -127,7 +100,7 @@ rm(test, col) # remove objects
 
 # Safely transform columns to numeric mode.
 # The "NAs introduced by coercion" message refers to the cases mentioned above.
-PL_dt[, (cols_to_numeric_4ES) := lapply(.SD, as.numeric), .SDcols = cols_to_numeric_4ES]
+GloPL[, (cols_to_numeric_4ES) := lapply(.SD, as.numeric), .SDcols = cols_to_numeric_4ES]
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -154,7 +127,7 @@ dt_list <- vector(mode = "list", length = nrow(mk))
 names(dt_list) <- mk$names
 
 # Make a copy of the columns that enter the ES computation
-dt <- PL_dt[, cols_to_numeric_4ES, with = FALSE]
+dt <- GloPL[, cols_to_numeric_4ES, with = FALSE]
 # For each combination, compute ES and store results in a list of data tables.
 # E.g. – the ES results for Hedge’s d will be stored in the list at
 # dt_list$hedgesD
@@ -162,58 +135,58 @@ for (i in 1:nrow(mk)){
     dt[, ":=" ( # create the following ES columns for:
         # _____ Fruitset _____ #
         # - Fruitset_Sup
-        ES_Fruitset_Sup.VS = get_ES(supp_X_fruitset_JSJEB,  open_X_fruitset_JSJEB,
-                                    supp_N_fruitset_JSJEB,  open_N_fruitset_JSJEB,
-                                    supp_SD_fruitset_JSJEB, open_SD_fruitset_JSJEB,
+        ES_Fruitset_Sup.VS = get_ES(Sup_X_FS,  Natural_X_FS,
+                                    Sup_N_FS,  Natural_N_FS,
+                                    Sup_SD_FS, Natural_SD_FS,
                                     k = mk[i, k], method =  mk[i, m]),
         # - Fruitset_Bagout
-        ES_Fruitset_Bagout.VS = get_ES(bagout_X_fruitset_JSJEB,  open_X_fruitset_JSJEB, 
-                                       bagout_N_fruitset_JSJEB,  open_N_fruitset_JSJEB,
-                                       bagout_SD_fruitset_JSJEB, open_SD_fruitset_JSJEB,
+        ES_Fruitset_Bagout.VS = get_ES(Bagout_X_FS,  Natural_X_FS, 
+                                       Bagout_N_FS,  Natural_N_FS,
+                                       Bagout_SD_FS, Natural_SD_FS,
                                        k = mk[i, k], method =  mk[i, m]),
         # _____ Seedset/Seeds per ovule _____ #
         # - Seedset_Sup
-        ES_Seedset_Sup.VS = get_ES(supp_X_seeds_per_ovule_Corrected_JR,  open_X_seeds_per_ovule_Corrected_JR, 
-                                   supp_N_seeds_per_ovule_Corrected_JR,  open_N_seeds_per_ovule_Corrected_JR,
-                                   supp_SD_seeds_per_ovule_Corrected_JR, open_SD_seeds_per_ovule_Corrected_JR,
+        ES_Seedset_Sup.VS = get_ES(Sup_X_SO,  Natural_X_SO, 
+                                   Sup_N_SO,  Natural_N_SO,
+                                   Sup_SD_SO, Natural_SD_SO,
                                    k = mk[i, k], method =  mk[i, m]),
         # - Seedset_Bagout
-        ES_Seedset_Bagout.VS = get_ES(bagout_X_seeds_per_ovule_Corrected_JR,  open_X_seeds_per_ovule_Corrected_JR, 
-                                      bagout_N_seeds_per_ovule_Corrected_JR,  open_N_seeds_per_ovule_Corrected_JR,
-                                      bagout_SD_seeds_per_ovule_Corrected_JR, open_SD_seeds_per_ovule_Corrected_JR,
+        ES_Seedset_Bagout.VS = get_ES(Bagout_X_SO,  Natural_X_SO, 
+                                      Bagout_N_SO,  Natural_N_SO,
+                                      Bagout_SD_SO, Natural_SD_SO,
                                       k = mk[i, k], method =  mk[i, m]),
         # _____ SPFR _____ #
         # - SPFR_Sup
-        ES_SPFR_Sup.VS = get_ES(supp_X_SPFR_Author,  open_X_SPFR_Author, 
-                                supp_N_SPFR_Author,  open_N_SPFR_Author,
-                                supp_SD_SPFR_Author, open_SD_SPFR_Author,
+        ES_SPFR_Sup.VS = get_ES(Sup_X_SPFR,  Natural_X_SPFR, 
+                                Sup_N_SPFR,  Natural_N_SPFR,
+                                Sup_SD_SPFR, Natural_SD_SPFR,
                                 k = mk[i, k], method =  mk[i, m]),
         # - SPFR_Bagout
-        ES_SPFR_Bagout.VS = get_ES(bagout_X_SPFR_Author,  open_X_SPFR_Author, 
-                                   bagout_N_SPFR_Author,  open_N_SPFR_Author,
-                                   bagout_SD_SPFR_Author, open_SD_SPFR_Author,
+        ES_SPFR_Bagout.VS = get_ES(Bagout_X_SPFR,  Natural_X_SPFR, 
+                                   Bagout_N_SPFR,  Natural_N_SPFR,
+                                   Bagout_SD_SPFR, Natural_SD_SPFR,
                                    k = mk[i, k], method =  mk[i, m]),
         # _____ SPFL _____ #
         # - SPFL_Sup
-        ES_SPFL_Sup.VS = get_ES(supp_X_SPFL_Author,  open_X_SPFL_Author, 
-                                supp_N_SPFL_Author,  open_N_SPFL_Author,
-                                supp_SD_SPFL_Author, open_SD_SPFL_Author,
+        ES_SPFL_Sup.VS = get_ES(Sup_X_SPFL,  Natural_X_SPFL, 
+                                Sup_N_SPFL,  Natural_N_SPFL,
+                                Sup_SD_SPFL, Natural_SD_SPFL,
                                 k = mk[i, k], method =  mk[i, m]),
         # - SPFL_Bagout
-        ES_SPFL_Bagout.VS = get_ES(bagout_X_SPFL_Author,  open_X_SPFL_Author, 
-                                   bagout_N_SPFL_Author,  open_N_SPFL_Author,
-                                   bagout_SD_SPFL_Author, open_SD_SPFL_Author,
+        ES_SPFL_Bagout.VS = get_ES(Bagout_X_SPFL,  Natural_X_SPFL, 
+                                   Bagout_N_SPFL,  Natural_N_SPFL,
+                                   Bagout_SD_SPFL, Natural_SD_SPFL,
                                    k = mk[i, k], method =  mk[i, m]),
         # _____ SPP _____ #
         # - SPP_Sup
-        ES_SPP_Sup.VS = get_ES(supp_X_SPP_Author,  open_X_SPP_Author, 
-                               supp_N_SPP_Author,  open_N_SPP_Author,
-                               supp_SD_SPP_Author, open_SD_SPP_Author,
+        ES_SPP_Sup.VS = get_ES(Sup_X_SPP,  Natural_X_SPP, 
+                               Sup_N_SPP,  Natural_N_SPP,
+                               Sup_SD_SPP, Natural_SD_SPP,
                                k = mk[i, k], method =  mk[i, m]),
         # - SPP_Bagout
-        ES_SPP_Bagout.VS = get_ES(bagout_X_SPP_Author,  open_X_SPP_Author, 
-                                  bagout_N_SPP_Author,  open_N_SPP_Author,
-                                  bagout_SD_SPP_Author, open_SD_SPP_Author,
+        ES_SPP_Bagout.VS = get_ES(Bagout_X_SPP,  Natural_X_SPP, 
+                                  Bagout_N_SPP,  Natural_N_SPP,
+                                  Bagout_SD_SPP, Natural_SD_SPP,
                                   k = mk[i, k], method =  mk[i, m])
     )]
     # For each table obtained at each iteration, keep only the ES columns
@@ -393,7 +366,7 @@ for (i in 1:length(dt_list)) {
 names(dt_list) <- NULL 
 ES_dt <- do.call("cbind", dt_list)
 # Add also the unique_number column (helpful for backtracking) 
-ES_dt <- cbind(ES_dt, PL_dt[,.(unique_number)])
+ES_dt <- cbind(ES_dt, GloPL[,.(unique_number)])
 
 write.csv(ES_dt, 
           file = "Output/cache/master_es_multi_methods.csv", 

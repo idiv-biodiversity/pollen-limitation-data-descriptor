@@ -14,7 +14,7 @@ setwd(gsub(pattern = '/Scripts', replacement = '', x = getwd()))
 
 
 # Read merged PL data
-pl_dt <- fread("output/GloPL_with_id_updated_ES.csv")
+pl_dt <- fread("output/GloPL.csv")
 
 # Number of unique studies 
 length(unique(pl_dt$unique_study_number))

@@ -6,8 +6,7 @@
 *.html
 
 archive
-Data
 Literature
 log
-Output
-Scripts/extra
+manuscript
+dryad

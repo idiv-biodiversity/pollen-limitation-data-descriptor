@@ -17,3 +17,7 @@ When running scripts, some intermediary output is stored in the `cache` folder. 
 - `cache/master_es_multi_methods.csv` - the output of `Compute_ES.R`
 
 - `cache/table_for_publication_freq_graph_ok.csv` produced by `Publication_frequencies.R`. This is the table behind the publication frequency graph (Figure 1).
+
+# Folder `share`
+
+This folder is empty, but will be populated with the PDF and PNG files for each figure once their corresponding scripts are executed. 

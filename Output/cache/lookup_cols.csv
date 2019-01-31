@@ -1,0 +1,11 @@
+PL_Effect_Size_Type2,PL_Effect_Size_Type1,col1.new,col2.new,col1.old,col2.old
+Bagout,FS,Bagout_X_FS,Natural_X_FS,bagout_X_fruitset_JSJEB,open_X_fruitset_JSJEB
+Sup,FS,Sup_X_FS,Natural_X_FS,supp_X_fruitset_JSJEB,open_X_fruitset_JSJEB
+Bagout,SPP,Bagout_X_SPP,Natural_X_SPP,bagout_X_SPP_Author,open_X_SPP_Author
+Sup,SPP,Sup_X_SPP,Natural_X_SPP,supp_X_SPP_Author,open_X_SPP_Author
+Bagout,SO,Bagout_X_SO,Natural_X_SO,bagout_X_seeds_per_ovule_Corrected_JR,open_X_seeds_per_ovule_Corrected_JR
+Sup,SO,Sup_X_SO,Natural_X_SO,supp_X_seeds_per_ovule_Corrected_JR,open_X_seeds_per_ovule_Corrected_JR
+Bagout,SPFR,Bagout_X_SPFR,Natural_X_SPFR,bagout_X_SPFR_Author,open_X_SPFR_Author
+Sup,SPFR,Sup_X_SPFR,Natural_X_SPFR,supp_X_SPFR_Author,open_X_SPFR_Author
+Bagout,SPFL,Bagout_X_SPFL,Natural_X_SPFL,bagout_X_SPFL_Author,open_X_SPFL_Author
+Sup,SPFL,Sup_X_SPFL,Natural_X_SPFL,supp_X_SPFL_Author,open_X_SPFL_Author
